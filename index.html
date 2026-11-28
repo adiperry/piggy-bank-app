@@ -30,6 +30,15 @@
   .wrap{max-width:680px;margin:0 auto;padding:18px 16px 40px}
   .hidden{display:none!important}
 
+  /* profiles */
+  .profile-bar{display:flex;gap:8px;overflow-x:auto;padding:4px 2px;margin-top:14px;scrollbar-width:none}
+  .profile-bar::-webkit-scrollbar{display:none}
+  .profile-chip{flex-shrink:0;display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--bg-card);color:var(--text);padding:8px 13px;border-radius:999px;font-weight:800;font-size:14px}
+  .profile-chip.active{background:var(--teal);border-color:var(--teal);color:#fff}
+  .profile-chip .p-bal{font-size:12.5px;font-weight:700;opacity:.85}
+  .profile-manage{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+  .profile-row{display:flex;gap:10px;align-items:center;padding:11px 12px;border:1px solid var(--line);border-radius:14px;background:var(--bg)}
+
   /* header */
   .intro{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:6px 2px 14px}
   .intro h1{margin:0;font-size:28px;line-height:1.05;font-weight:900;letter-spacing:-.02em}
@@ -147,7 +156,7 @@
 
   <div class="intro">
     <div>
-      <h1>הקופה של <span id="childNameTitle">…</span> 🐷</h1>
+      <h1>הקופה של <span id="childNameTitle">…</span> <span id="childEmoji">🐷</span></h1>
       <p>כמה כסף יש, מה נכנס ומה יצא — הכל במקום אחד.</p>
     </div>
     <div class="badge" id="modeBadge"><i></i> <span id="modeBadgeText">מצב הורה</span></div>
@@ -172,6 +181,9 @@
     <div class="balance"><span class="num" id="balanceNum">0</span><span class="cur">₪</span></div>
     <p class="hero-sub" id="heroSub"></p>
   </section>
+
+  <!-- profile switcher (parent mode only) -->
+  <div class="profile-bar parent-only" id="profileBar" hidden></div>
 
   <nav class="tabs" id="tabs" aria-label="לשוניות"></nav>
 
@@ -391,7 +403,40 @@
         <button class="btn grow" type="button" id="demoBtn">🎲 טען נתוני הדגמה</button>
         <button class="btn btn-danger grow" type="button" id="resetBtn">🗑️ מחק את כל הנתונים</button>
       </div>
-      <p class="hint">הנתונים נשמרים בדפדפן שלך בלבד (localStorage). אין שרת, אין חשבון ואין מעקב. מחיקת נתוני הדפדפן תמחק גם את הקופה — לכן כדאי לשמור קישור שיתוף כגיבוי.</p>
+      <p class="hint">הנתונים נשמרים בדפדפן שלך (localStorage) — קופה נפרדת לכל פרופיל. מחיקת נתוני הדפדפן תמחק את הקופות, לכן כדאי לשמור קישור שיתוף כגיבוי, או לחבר Google Drive בכרטיס למטה כדי שהקופות יישמרו גם בענן.</p>
+    </section>
+
+    <!-- PROFILES -->
+    <section class="card">
+      <h2>👨‍👩‍👧‍👦 קופות (פרופילים)</h2>
+      <p class="card-sub">קופה נפרדת לכל ילד — לכל קופה יתרה, היסטוריה, משימות, דמי כיס וחיסכון קבוע משלה. הקופה האחרונה שנבחרה נשארת ברירת המחדל.</p>
+      <div class="profile-manage" id="profileList"></div>
+      <form id="profileForm" style="margin-top:14px">
+        <label for="profileName">שם לקופה החדשה</label>
+        <input id="profileName" type="text" placeholder="למשל: אביב" required/>
+        <label for="profileEmoji">אימוג׳י</label>
+        <select id="profileEmoji">
+          <option>🐷</option><option>🦁</option><option>🐶</option><option>🐱</option><option>🦄</option>
+          <option>🐸</option><option>🚀</option><option>⚽</option><option>🎨</option><option>🦊</option>
+        </select>
+        <button class="btn btn-primary btn-block" type="submit" style="margin-top:14px">צור קופה חדשה</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>☁️ סנכרון Google Drive</h2>
+      <p class="card-sub">מתחברים עם חשבון גוגל והקופות נשמרות גם בדרייב של אותו חשבון — כך הן עוברות בין מכשירים ולא תלויות בדפדפן אחד.</p>
+      <div id="driveStatus" style="margin:12px 0"></div>
+      <div id="driveSetupHint" hidden>
+        <p class="hint">כדי להפעיל את הסנכרון צריך מזהה לקוח של גוגל (OAuth Client ID):</p>
+        <p class="hint">1. נכנסים ל־<b>Google Cloud Console</b> ויוצרים פרויקט.<br/>2. יוצרים <b>OAuth client ID</b> מסוג Web application.<br/>3. מוסיפים את <b>https://adiperry.github.io</b> לרשימת ה־Authorized JavaScript origins.<br/>4. מדביקים את ה־Client ID במשתנה <b>GOOGLE_CLIENT_ID</b> בראש הקובץ index.html ומעלים שוב לגיטהאב.</p>
+      </div>
+      <div class="row">
+        <button class="btn btn-primary grow" type="button" id="driveSignInBtn">התחבר עם Google</button>
+        <button class="btn grow" type="button" id="driveSyncBtn" hidden>🔄 סנכרן עכשיו</button>
+        <button class="btn grow" type="button" id="driveSignOutBtn" hidden>התנתק</button>
+      </div>
+      <p class="hint">הנתונים נשמרים בקובץ JSON נסתר בתיקיית האפליקציה של הדרייב (appDataFolder) — הוא לא מופיע בדרייב הרגיל ושייך רק לחשבון המחובר. בלי חיבור, הכל נשמר בדפדפן כרגיל.</p>
     </section>
   </section>
 
@@ -401,7 +446,7 @@
 <!-- SETUP -->
 <main class="wrap setup" id="setup" hidden>
   <h1>🐷 ברוכים הבאים לקופה!</h1>
-  <p>קופת חיסכון לילדים — יתרה, היסטוריה, דמי כיס, משימות, יעד חיסכון וכסף דמיוני. הכל נשמר בדפדפן שלך בלבד, בלי חשבון ובלי שרת.</p>
+  <p>קופת חיסכון לילדים — יתרה, היסטוריה, דמי כיס, משימות, יעד חיסכון וכסף דמיוני. אפשר לפתוח קופה לכל ילד, והכל נשמר בדפדפן שלך — ואפשר גם לחבר Google Drive בהגדרות כדי שהקופות יעברו בין מכשירים.</p>
   <form id="setupForm" class="card" style="margin-top:18px">
     <label for="setupName">שם הילד/ה</label>
     <input id="setupName" type="text" placeholder="למשל: דני" required/>
@@ -423,6 +468,18 @@
    ============================================================ */
 
 var LS_KEY = "piggyBank.v1";
+var PROFILES_KEY = "piggyBank.profiles.v1";
+
+/* ---------- Google Drive sync (אופציונלי) ----------
+   כדי להפעיל: יוצרים OAuth Client ID מסוג Web application ב־Google Cloud
+   Console, מוסיפים את https://adiperry.github.io ל־Authorized JavaScript
+   origins, ומדביקים את ה־Client ID כאן במקום המחרוזת למטה.
+   בלי Client ID האפליקציה עובדת כרגיל לגמרי עם localStorage בלבד.
+   אין כאן שום Client ID אמיתי — צריך ליצור אחד בחשבון הגוגל שלכם. */
+var GOOGLE_CLIENT_ID = "PASTE_YOUR_CLIENT_ID_HERE";
+var DRIVE_FILE_NAME = "piggy-bank-profiles.json";
+var DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/userinfo.email";
+var PROFILE_EMOJIS = ["🐷","🦁","🐶","🐱","🦄","🐸","🚀","⚽","🎨","🦊"];
 
 /* ---------- catalogs (generic, no personal data) ---------- */
 var CATALOG = [
@@ -520,20 +577,142 @@ function advanceDue(iso, freq, weekday, dayOfMonth){
 function emptyState(name){
   return { v:1, name:name||"", txs:[], tasks:[], allowance:null, goal:null, savings:null };
 }
-function loadState(){
+function normalizeProfileState(s){
+  if(!s || typeof s!=="object") return emptyState("");
+  if(typeof s.name!=="string") s.name = "";
+  s.txs = Array.isArray(s.txs)? s.txs : [];
+  s.tasks = Array.isArray(s.tasks)? s.tasks : [];
+  if(!("allowance" in s)) s.allowance = null;
+  if(!("goal" in s)) s.goal = null;
+  if(!("savings" in s)) s.savings = null;
+  return s;
+}
+
+/* ---------- profiles store ----------
+   store = { v:1, activeId, updatedAt, profiles:[{id, name, emoji, state}] }
+   `state` (global) is always the ACTIVE profile's state object, so all the
+   existing render/handlers keep working unchanged. */
+var store = null; // set in boot; null in shared-view mode
+function activeProfile(){
+  if(!store) return null;
+  var p = null;
+  store.profiles.forEach(function(x){ if(x.id===store.activeId) p = x; });
+  return p || store.profiles[0] || null;
+}
+function newStoreFromState(st, emoji){
+  var id = uid();
+  return { v:1, activeId:id, updatedAt:Date.now(),
+    profiles:[{ id:id, name:st.name||"", emoji:emoji||"🐷", state:st }] };
+}
+function loadStore(){
   try{
-    var raw = localStorage.getItem(LS_KEY);
-    if(!raw) return null;
-    var s = JSON.parse(raw);
-    if(!s || s.v!==1 || typeof s.name!=="string") return null;
-    s.txs = Array.isArray(s.txs)? s.txs : [];
-    s.tasks = Array.isArray(s.tasks)? s.tasks : [];
-    return s;
-  }catch(e){ return null; }
+    var raw = localStorage.getItem(PROFILES_KEY);
+    if(raw){
+      var st = JSON.parse(raw);
+      if(st && st.v===1 && Array.isArray(st.profiles) && st.profiles.length){
+        st.profiles.forEach(function(p){
+          if(typeof p.name!=="string") p.name = "";
+          if(PROFILE_EMOJIS.indexOf(p.emoji)<0) p.emoji = "🐷";
+          p.state = normalizeProfileState(p.state);
+        });
+        if(!st.profiles.some(function(p){ return p.id===st.activeId; })) st.activeId = st.profiles[0].id;
+        return st;
+      }
+    }
+  }catch(e){ /* corrupted store: fall through to migration / fresh start */ }
+  // migration: single-bank data under the old key becomes the first profile
+  var old = null;
+  try{
+    var rawOld = localStorage.getItem(LS_KEY);
+    if(rawOld){
+      var o = JSON.parse(rawOld);
+      if(o && o.v===1 && typeof o.name==="string") old = o;
+    }
+  }catch(e){}
+  if(old){
+    try{ localStorage.setItem(LS_KEY + ".bak", JSON.stringify(old)); }catch(e){} // one-time backup, just in case
+    try{ localStorage.removeItem(LS_KEY); }catch(e){}
+    var migrated = newStoreFromState(normalizeProfileState(old), "🐷");
+    try{ localStorage.setItem(PROFILES_KEY, JSON.stringify(migrated)); }catch(e){}
+    return migrated;
+  }
+  return null;
+}
+function saveStoreLocal(){
+  if(!store) return;
+  var ap = activeProfile();
+  if(ap && state){ ap.name = state.name; ap.state = state; } // keep profile name in sync with child name
+  store.updatedAt = Date.now();
+  try{ localStorage.setItem(PROFILES_KEY, JSON.stringify(store)); }catch(e){ /* storage unavailable: keep in-memory */ }
+}
+function saveStore(){
+  if(typeof viewMode !== "undefined" && viewMode==="shared") return; // never overwrite own data from a shared view
+  if(!store) return;
+  saveStoreLocal();
+  scheduleDriveUpload();
+}
+function loadState(){ // kept for compatibility with test hooks: returns active profile's state
+  var st = loadStore();
+  return st ? normalizeProfileState(activeProfileOf(st).state) : null;
+  function activeProfileOf(s){
+    var p = null;
+    s.profiles.forEach(function(x){ if(x.id===s.activeId) p = x; });
+    return p || s.profiles[0];
+  }
 }
 function saveState(){
   if(typeof viewMode !== "undefined" && viewMode==="shared") return; // never overwrite own data from a shared view
+  if(store){ saveStore(); return; }
   try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){ /* storage unavailable: keep in-memory */ }
+}
+
+/* ---------- profile operations ---------- */
+function processDueForProfile(p, today){
+  return processDueAllowance(p.state, today) + processDueSavings(p.state, today);
+}
+function switchProfile(id){
+  if(!store || id===store.activeId) return false;
+  var p = null;
+  store.profiles.forEach(function(x){ if(x.id===id) p = x; });
+  if(!p) return false;
+  saveStoreLocal();
+  store.activeId = id;
+  state = p.state;
+  processDueForProfile(p, todayStr());
+  saveStore();
+  showView("home"); renderAll();
+  return true;
+}
+function createProfile(name, emoji){
+  if(!store) return null;
+  var p = { id:uid(), name:name, emoji:(PROFILE_EMOJIS.indexOf(emoji)>=0?emoji:"🐷"), state:emptyState(name) };
+  store.profiles.push(p);
+  store.activeId = p.id;
+  state = p.state;
+  saveStore();
+  showView("home"); renderAll();
+  return p;
+}
+function renameProfile(id, name){
+  if(!store || !name) return false;
+  var p = null;
+  store.profiles.forEach(function(x){ if(x.id===id) p = x; });
+  if(!p) return false;
+  p.name = name;
+  p.state.name = name;
+  saveStore(); renderAll();
+  return true;
+}
+function deleteProfile(id){
+  if(!store || store.profiles.length<=1) return false; // cannot delete the last profile
+  var wasActive = (store.activeId===id);
+  store.profiles = store.profiles.filter(function(p){ return p.id!==id; });
+  if(wasActive){
+    store.activeId = store.profiles[0].id;
+    state = store.profiles[0].state;
+  }
+  saveStore(); renderAll();
+  return true;
 }
 
 /* derived figures: balance counts only transactions dated today or earlier */
@@ -603,6 +782,222 @@ function processDueSavings(st, today){
     sv.nextDue = sv.frequency==="weekly" ? nextWeekdayDate(sv.weekday, today) : nextMonthDate(sv.dayOfMonth||1, today);
   }
   return paid;
+}
+
+/* ---------- Google Drive sync (optional, needs GOOGLE_CLIENT_ID) ----------
+   Data lives in ONE JSON file in the signed-in user's appDataFolder (hidden,
+   per-user, not visible in normal Drive). Local-first: localStorage is the
+   source of truth; Drive is a synced copy. On sign-in, the newer copy wins
+   (by updatedAt / Drive modifiedTime); on every local change the file is
+   uploaded (debounced). The access token is kept in memory only. */
+var drive = { token:null, email:"", fileId:null, status:"off", lastSync:null,
+  gisLoaded:false, gisLoading:false, tokenClient:null, uploadTimer:null, autoTried:false };
+
+function driveConfigured(){
+  return !!GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID !== "PASTE_YOUR_CLIENT_ID_HERE";
+}
+function driveStatusText(){
+  if(!driveConfigured()) return { html:"<b>הסנכרון לא הוגדר עדיין.</b> צריך Client ID של גוגל — ראו את ההסבר למטה. בינתיים הכל נשמר בדפדפן כרגיל." };
+  if(drive.status==="connecting") return { html:"⏳ מתחבר ל־Google…" };
+  if(drive.status==="syncing") return { html:"🔄 מסנכרן ל־Drive…" };
+  if(drive.status==="ok") return { html:"✅ <b>מחובר ל־Google Drive</b>" + (drive.email ? " (" + escapeHtml(drive.email) + ")" : "") + (drive.lastSync ? " • סונכרן לאחרונה: " + drive.lastSync.toLocaleTimeString("he-IL", {hour:"2-digit", minute:"2-digit"}) : "") };
+  if(drive.status==="error") return { html:"⚠️ <b>שגיאת סנכרון.</b> הנתונים נשמרים בדפדפן כרגיל — נסו להתחבר שוב או ללחוץ ״סנכרן עכשיו״." };
+  return { html:"לא מחובר ל־Google Drive. התחברו כדי שהקופות יישמרו גם בדרייב ויעברו בין מכשירים." };
+}
+function renderDriveStatus(){
+  var box = $("driveStatus");
+  if(!box) return;
+  box.innerHTML = '<div class="banner teal" style="margin-top:0"><p style="margin:0">' + driveStatusText().html + '</p></div>';
+  $("driveSetupHint").hidden = driveConfigured();
+  $("driveSignInBtn").hidden = driveConfigured() && !!drive.token;
+  $("driveSyncBtn").hidden = !drive.token;
+  $("driveSignOutBtn").hidden = !drive.token;
+}
+function driveSetStatus(s){ drive.status = s; renderDriveStatus(); }
+
+function loadGis(){
+  return new Promise(function(resolve){
+    if(window.google && google.accounts && google.accounts.oauth2){ drive.gisLoaded = true; resolve(true); return; }
+    if(drive.gisLoading){
+      var waited = 0;
+      var iv = setInterval(function(){
+        waited += 200;
+        if(drive.gisLoaded){ clearInterval(iv); resolve(true); }
+        else if(waited > 15000){ clearInterval(iv); resolve(false); }
+      }, 200);
+      return;
+    }
+    drive.gisLoading = true;
+    var done = false;
+    var finish = function(ok){ if(!done){ done = true; drive.gisLoading = false; resolve(ok); } };
+    var s = document.createElement("script");
+    s.src = "https://accounts.google.com/gsi/client"; s.async = true; s.defer = true;
+    s.onload = function(){ drive.gisLoaded = true; finish(true); };
+    s.onerror = function(){ finish(false); };
+    setTimeout(function(){ finish(false); }, 15000);
+    document.head.appendChild(s);
+  });
+}
+function driveRequestToken(silent){
+  return loadGis().then(function(ok){
+    if(!ok) throw new Error("Google Sign-In library failed to load");
+    return new Promise(function(resolve, reject){
+      if(!drive.tokenClient){
+        try{
+          drive.tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: GOOGLE_CLIENT_ID,
+            scope: DRIVE_SCOPE,
+            callback: function(resp){
+              if(resp && resp.access_token){ drive.token = resp.access_token; resolve(resp.access_token); }
+              else reject(new Error("no access token"));
+            },
+            error_callback: function(){ reject(new Error("token request failed")); }
+          });
+        }catch(e){ reject(e); return; }
+      }
+      try{ drive.tokenClient.requestAccessToken({ prompt: silent ? "" : "consent" }); }
+      catch(e){ reject(e); }
+    });
+  });
+}
+function driveFetch(url, opts, retried){
+  opts = opts || {};
+  opts.headers = opts.headers || {};
+  opts.headers.Authorization = "Bearer " + drive.token;
+  return fetch(url, opts).then(function(res){
+    if(res.status===401 && !retried){
+      return driveRequestToken(true).then(function(){ return driveFetch(url, opts, true); });
+    }
+    return res;
+  });
+}
+function driveFindFile(){
+  var q = "name='" + DRIVE_FILE_NAME + "' and 'appDataFolder' in parents and trashed=false";
+  return driveFetch("https://www.googleapis.com/drive/v3/files?q=" + encodeURIComponent(q) + "&spaces=appDataFolder&fields=files(id,modifiedTime)")
+    .then(function(res){ if(!res.ok) throw new Error("Drive list failed: " + res.status); return res.json(); })
+    .then(function(j){ return (j.files && j.files[0]) || null; });
+}
+function driveDownload(fileId){
+  return driveFetch("https://www.googleapis.com/drive/v3/files/" + encodeURIComponent(fileId) + "?alt=media")
+    .then(function(res){ if(!res.ok) throw new Error("Drive download failed: " + res.status); return res.json(); });
+}
+function driveUpload(jsonStr, fileId){
+  var meta = { name: DRIVE_FILE_NAME, mimeType: "application/json" };
+  if(!fileId) meta.parents = ["appDataFolder"];
+  var boundary = "piggybank" + Date.now().toString(36);
+  var body = "--" + boundary + "\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n" + JSON.stringify(meta)
+    + "\r\n--" + boundary + "\r\nContent-Type: application/json\r\n\r\n" + jsonStr
+    + "\r\n--" + boundary + "--";
+  var url = fileId
+    ? "https://www.googleapis.com/upload/drive/v3/files/" + encodeURIComponent(fileId) + "?uploadType=multipart"
+    : "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart";
+  return driveFetch(url, { method: fileId ? "PATCH" : "POST",
+    headers: { "Content-Type": 'multipart/related; boundary="' + boundary + '"' }, body: body })
+    .then(function(res){ if(!res.ok) throw new Error("Drive upload failed: " + res.status); return res.json(); });
+}
+function driveUploadNow(){
+  if(!drive.token || !store) return Promise.resolve(false);
+  var payload = JSON.stringify(store);
+  return driveUpload(payload, drive.fileId).then(function(j){
+    if(j && j.id) drive.fileId = j.id;
+    store.updatedAt = Date.now();
+    saveStoreLocal(); // mark local copy as fresh so we don't re-adopt the cloud copy
+    drive.lastSync = new Date();
+    driveSetStatus("ok");
+    return true;
+  }).catch(function(){
+    driveSetStatus("error");
+    return false;
+  });
+}
+function scheduleDriveUpload(){
+  if(!drive.token || !store) return;
+  if(drive.uploadTimer) clearTimeout(drive.uploadTimer);
+  driveSetStatus("syncing");
+  drive.uploadTimer = setTimeout(function(){ driveUploadNow(); }, 2000);
+}
+function driveAdoptCloud(cloud){
+  var st = { v:1, activeId: cloud.activeId, updatedAt: cloud.updatedAt || Date.now(), profiles: [] };
+  cloud.profiles.forEach(function(p){
+    st.profiles.push({ id: p.id, name: typeof p.name==="string" ? p.name : "",
+      emoji: (PROFILE_EMOJIS.indexOf(p.emoji)>=0 ? p.emoji : "🐷"),
+      state: normalizeProfileState(p.state) });
+  });
+  if(!st.profiles.length) return false;
+  if(!st.profiles.some(function(p){ return p.id===st.activeId; })) st.activeId = st.profiles[0].id;
+  store = st;
+  state = activeProfile().state;
+  saveStoreLocal();
+  renderAll();
+  return true;
+}
+function driveSyncFromCloud(){
+  return driveFindFile().then(function(f){
+    if(!f){
+      if(store) return driveUploadNow();
+      return false;
+    }
+    drive.fileId = f.id;
+    return driveDownload(f.id).then(function(cloud){
+      if(!cloud || cloud.v!==1 || !Array.isArray(cloud.profiles) || !cloud.profiles.length){
+        return store ? driveUploadNow() : false; // cloud copy unusable: overwrite with local
+      }
+      var cloudTime = Date.parse(f.modifiedTime) || 0;
+      var localTime = (store && store.updatedAt) || 0;
+      if(!store){ driveAdoptCloud(cloud); return true; }
+      if(cloudTime > localTime + 5000){ driveAdoptCloud(cloud); return true; } // cloud is newer
+      if(localTime > cloudTime + 5000){ return driveUploadNow(); } // local is newer
+      return true; // in sync
+    });
+  });
+}
+function driveSignIn(){
+  if(!driveConfigured()){ renderDriveStatus(); return Promise.resolve(false); }
+  driveSetStatus("connecting");
+  return driveRequestToken(false).then(function(){
+    return driveFetch("https://www.googleapis.com/oauth2/v3/userinfo")
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(u){ if(u && u.email) drive.email = u.email; })
+      .catch(function(){ /* email is nice-to-have only */ });
+  }).then(function(){
+    return driveSyncFromCloud();
+  }).then(function(){
+    try{ localStorage.setItem("piggyBank.driveAuto", "1"); }catch(e){}
+    drive.lastSync = new Date();
+    driveSetStatus("ok");
+    renderAll();
+    return true;
+  }).catch(function(){
+    drive.token = null;
+    driveSetStatus("error");
+    return false;
+  });
+}
+function driveSignOut(){
+  if(drive.token && window.google && google.accounts && google.accounts.oauth2){
+    try{ google.accounts.oauth2.revoke(drive.token, function(){}); }catch(e){}
+  }
+  drive.token = null; drive.email = ""; drive.fileId = null;
+  if(drive.uploadTimer){ clearTimeout(drive.uploadTimer); drive.uploadTimer = null; }
+  try{ localStorage.removeItem("piggyBank.driveAuto"); }catch(e){}
+  driveSetStatus("off");
+  renderAll();
+}
+function driveTrySilentSignIn(){
+  if(drive.autoTried || !driveConfigured()) return;
+  drive.autoTried = true;
+  var auto = null;
+  try{ auto = localStorage.getItem("piggyBank.driveAuto"); }catch(e){}
+  if(auto !== "1" || !store) return;
+  driveRequestToken(true).then(function(){
+    return driveSyncFromCloud();
+  }).then(function(){
+    drive.lastSync = new Date();
+    driveSetStatus("ok");
+    renderAll();
+  }).catch(function(){
+    drive.token = null; // stay signed out quietly; user can sign in from Settings
+  });
 }
 
 /* ---------- demo data (generic — no real personal data) ---------- */
@@ -786,6 +1181,8 @@ function renderAll(){
   var sums = computeBalance(state.txs, today);
   document.title = "הקופה של " + state.name;
   $("childNameTitle").textContent = state.name;
+  var ap0 = activeProfile();
+  $("childEmoji").textContent = ap0 ? (ap0.emoji || "🐷") : "🐷";
   $("heroLabel").textContent = "היתרה של " + state.name + " עכשיו";
   $("heroDate").textContent = "היום: " + fmtDate(today);
   $("balanceNum").textContent = fmtNum(sums.balance);
@@ -807,6 +1204,33 @@ function renderAll(){
   renderSavings();
   renderGoalView(sums.balance);
   renderTabs();
+  renderProfiles();
+  renderDriveStatus();
+}
+
+function renderProfiles(){
+  var bar = $("profileBar");
+  if(viewMode!=="owner" || kidMode || !store){ bar.hidden = true; bar.innerHTML = ""; }
+  else{
+    bar.hidden = false;
+    bar.innerHTML = store.profiles.map(function(p){
+      var sums = computeBalance(p.state.txs, todayStr());
+      return '<button type="button" class="profile-chip' + (p.id===store.activeId ? " active" : "") + '" data-profile="' + p.id + '">' + escapeHtml(p.emoji || "🐷") + " " + escapeHtml(p.name) + ' <span class="p-bal">' + fmtMoney(sums.balance) + "</span></button>";
+    }).join("") + '<button type="button" class="profile-chip" id="newProfileBtn">＋ קופה חדשה</button>';
+  }
+  var list = $("profileList");
+  if(list){
+    if(!store){ list.innerHTML = ""; return; }
+    list.innerHTML = store.profiles.map(function(p){
+      var sums = computeBalance(p.state.txs, todayStr());
+      return '<div class="profile-row"><div style="font-size:24px">' + escapeHtml(p.emoji || "🐷") + '</div>'
+        + '<div style="flex:1;min-width:0"><div style="font-weight:800">' + escapeHtml(p.name) + "</div>"
+        + '<div class="hint" style="margin-top:0">יתרה: ' + fmtMoney(sums.balance) + " • " + (p.state.txs || []).length + " פעולות" + (p.id===store.activeId ? " • פעילה כרגע" : "") + "</div></div>"
+        + '<button type="button" class="btn btn-small" data-rename-profile="' + p.id + '">✏️ שנה שם</button>'
+        + (store.profiles.length > 1 ? '<button type="button" class="btn btn-small btn-danger" data-del-profile="' + p.id + '">🗑️ מחק</button>' : "")
+        + "</div>";
+    }).join("");
+  }
 }
 
 function renderChart(txs, today){
@@ -1082,16 +1506,20 @@ function bindEvents(){
     var name = $("setupName").value.trim();
     if(!name) return;
     var start = Math.max(0, Math.round(parseFloat($("setupBalance").value||"0")*100)||0);
-    state = emptyState(name);
-    if(start>0) state.txs.push({id:uid(), date:todayStr(), type:"income", amount:start, reason:"יתרת פתיחה"});
+    var st = emptyState(name);
+    if(start>0) st.txs.push({id:uid(), date:todayStr(), type:"income", amount:start, reason:"יתרת פתיחה"});
+    store = newStoreFromState(st, "🐷");
+    state = st;
     viewMode = "owner";
-    saveState();
+    saveStore();
     showApp(); showView("home"); renderAll();
   });
   $("setupDemoBtn").addEventListener("click", function(){
-    state = demoState();
+    var st = demoState();
+    store = newStoreFromState(st, "🐷");
+    state = st;
     viewMode = "owner";
-    saveState();
+    saveStore();
     showApp(); showView("home"); renderAll();
   });
 
@@ -1134,6 +1562,22 @@ function bindEvents(){
     if(dt){
       state.tasks = state.tasks.filter(function(t){ return t.id!==dt.dataset.delTask; });
       saveState(); renderAll(); return;
+    }
+    var rp = e.target.closest("[data-rename-profile]");
+    if(rp){
+      var prof = null;
+      if(store) store.profiles.forEach(function(x){ if(x.id===rp.dataset.renameProfile) prof = x; });
+      if(prof){
+        var nn = prompt("שם חדש לקופה:", prof.name);
+        if(nn && nn.trim()) renameProfile(prof.id, nn.trim());
+      }
+      return;
+    }
+    var dp = e.target.closest("[data-del-profile]");
+    if(dp){
+      if(!armConfirm(dp, "🗑️ מחק")) return;
+      deleteProfile(dp.dataset.delProfile);
+      return;
     }
   });
 
@@ -1226,6 +1670,33 @@ function bindEvents(){
   $("kidModeBtn").addEventListener("click", function(){ setKidMode(true); });
   $("exitKidBtn").addEventListener("click", function(){ setKidMode(false); });
 
+  $("profileBar").addEventListener("click", function(e){
+    var chip = e.target.closest("[data-profile]");
+    if(chip){ switchProfile(chip.dataset.profile); return; }
+    if(e.target.closest("#newProfileBtn")){
+      showView("settings");
+      setTimeout(function(){ var i = $("profileName"); if(i) i.focus(); }, 50);
+    }
+  });
+  $("profileForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var name = $("profileName").value.trim();
+    if(!name || !store) return;
+    createProfile(name, $("profileEmoji").value);
+    $("profileForm").reset();
+  });
+
+  $("driveSignInBtn").addEventListener("click", function(){ driveSignIn(); });
+  $("driveSyncBtn").addEventListener("click", function(){
+    driveSetStatus("syncing");
+    driveSyncFromCloud().then(function(){
+      drive.lastSync = new Date();
+      driveSetStatus("ok");
+      renderAll();
+    }).catch(function(){ driveSetStatus("error"); });
+  });
+  $("driveSignOutBtn").addEventListener("click", function(){ driveSignOut(); });
+
   $("shareBtn").addEventListener("click", function(){
     var btn = $("shareBtn");
     btn.disabled = true; btn.textContent = "⏳ יוצר קישור…";
@@ -1249,12 +1720,20 @@ function bindEvents(){
 
   $("demoBtn").addEventListener("click", function(){
     if(!armConfirm(this, "🎲 טען נתוני הדגמה")) return;
-    state = demoState();
-    saveState(); setKidMode(false); showView("home"); renderAll();
+    if(!store) return;
+    var ap = activeProfile();
+    ap.state = demoState(); // demo loads into the ACTIVE profile only; other profiles untouched
+    ap.name = ap.state.name;
+    state = ap.state;
+    saveStore(); setKidMode(false); showView("home"); renderAll();
   });
   $("resetBtn").addEventListener("click", function(){
     if(!armConfirm(this, "🗑️ מחק את כל הנתונים")) return;
+    try{ localStorage.removeItem(PROFILES_KEY); }catch(e){}
     try{ localStorage.removeItem(LS_KEY); }catch(e){}
+    try{ localStorage.removeItem(LS_KEY + ".bak"); }catch(e){}
+    try{ localStorage.removeItem("piggyBank.driveAuto"); }catch(e){}
+    store = null;
     state = null;
     setKidMode(false);
     showSetup();
@@ -1286,18 +1765,17 @@ function boot(){
   bootOwner();
 }
 function bootOwner(){
-  var stored = loadState();
+  var stored = loadStore();
   if(!stored){ showSetup(); return; }
-  state = stored;
+  store = stored;
+  state = activeProfile().state;
   viewMode = "owner";
-  var alBefore = state.allowance && state.allowance.nextDue;
-  var svBefore = state.savings && state.savings.nextDue;
-  var paid = processDueAllowance(state, todayStr());
-  var saved = processDueSavings(state, todayStr());
-  var alAfter = state.allowance && state.allowance.nextDue;
-  var svAfter = state.savings && state.savings.nextDue;
-  if(paid>0 || saved>0 || alBefore!==alAfter || svBefore!==svAfter) saveState();
+  var today = todayStr();
+  var before = JSON.stringify(store);
+  store.profiles.forEach(function(p){ processDueForProfile(p, today); }); // dues run for ALL profiles, not just the active one
+  if(JSON.stringify(store)!==before) saveStoreLocal();
   showApp(); showView("home"); renderAll();
+  driveTrySilentSignIn();
 }
 document.addEventListener("DOMContentLoaded", boot);
 
@@ -1318,6 +1796,20 @@ window.PiggyTest = {
   loadState: loadState,
   saveState: saveState,
   LS_KEY: LS_KEY,
+  PROFILES_KEY: PROFILES_KEY,
+  GOOGLE_CLIENT_ID: GOOGLE_CLIENT_ID,
+  getStore: function(){ return store; },
+  loadStore: loadStore,
+  switchProfile: switchProfile,
+  createProfile: createProfile,
+  renameProfile: renameProfile,
+  deleteProfile: deleteProfile,
+  activeProfile: activeProfile,
+  driveConfigured: driveConfigured,
+  getDriveStatus: function(){ return { configured: driveConfigured(), signedIn: !!drive.token, email: drive.email, fileId: drive.fileId, status: drive.status }; },
+  driveSignIn: driveSignIn,
+  driveSignOut: driveSignOut,
+  driveSyncFromCloud: driveSyncFromCloud,
   boot: boot
 };
 </script>
