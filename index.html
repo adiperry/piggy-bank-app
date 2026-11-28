@@ -4,7 +4,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="color-scheme" content="light dark"/>
-<meta name="description" content="קופת חיסכון לילדים — יתרה, היסטוריה, דמי כיס, משימות, יעד חיסכון וכסף דמיוני. הנתונים נשמרים בדפדפן שלך בלבד."/>
+<meta name="description" content="קופת חיסכון לילדים — יתרה, היסטוריה, דמי כיס, משימות, יעד חיסכון וכסף דמיוני. הנתונים נשמרים בדפדפן שלך — ואפשר גם לסנכרן אותם לענן."/>
 <link rel="icon" href="data:,"/>
 <title>קופת חיסכון לילדים</title>
 <style>
@@ -403,7 +403,7 @@
         <button class="btn grow" type="button" id="demoBtn">🎲 טען נתוני הדגמה</button>
         <button class="btn btn-danger grow" type="button" id="resetBtn">🗑️ מחק את כל הנתונים</button>
       </div>
-      <p class="hint">הנתונים נשמרים בדפדפן שלך (localStorage) — קופה נפרדת לכל פרופיל. מחיקת נתוני הדפדפן תמחק את הקופות, לכן כדאי לשמור קישור שיתוף כגיבוי, או לחבר Google Drive בכרטיס למטה כדי שהקופות יישמרו גם בענן.</p>
+      <p class="hint">הנתונים נשמרים בדפדפן שלך (localStorage) — קופה נפרדת לכל פרופיל. מחיקת נתוני הדפדפן תמחק את הקופות, לכן כדאי לשמור קישור שיתוף כגיבוי, או לחבר סנכרון Firebase בכרטיס למטה כדי שהקופות יישמרו גם בענן.</p>
     </section>
 
     <!-- PROFILES -->
@@ -424,29 +424,40 @@
     </section>
 
     <section class="card">
-      <h2>☁️ סנכרון Google Drive</h2>
-      <p class="card-sub">מתחברים עם חשבון גוגל והקופות נשמרות גם בדרייב של אותו חשבון — כך הן עוברות בין מכשירים ולא תלויות בדפדפן אחד.</p>
-      <div id="driveStatus" style="margin:12px 0"></div>
-      <div id="driveSetupHint" hidden>
-        <p class="hint">כדי להפעיל את הסנכרון צריך מזהה לקוח של גוגל (OAuth Client ID):</p>
-        <p class="hint">1. נכנסים ל־<b>Google Cloud Console</b> ויוצרים פרויקט.<br/>2. יוצרים <b>OAuth client ID</b> מסוג Web application.<br/>3. מוסיפים את <b>https://adiperry.github.io</b> לרשימת ה־Authorized JavaScript origins.<br/>4. מדביקים את ה־Client ID במשתנה <b>GOOGLE_CLIENT_ID</b> בראש הקובץ index.html ומעלים שוב לגיטהאב.</p>
+      <h2>☁️ סנכרון Firebase</h2>
+      <p class="card-sub">נרשמים עם מייל וסיסמה והקופות נשמרות בענן — כך הן עוברות בין מכשירים ולא תלויות בדפדפן אחד. הסנכרון חינמי (תוכנית Spark) ולא דורש כרטיס אשראי.</p>
+      <div id="fbStatus" style="margin:12px 0"></div>
+      <div id="fbSetupHint" hidden>
+        <p class="hint">כדי להפעיל את הסנכרון צריך פרויקט Firebase (חינם, בלי כרטיס אשראי):</p>
+        <p class="hint">1. יוצרים פרויקט ב־<b>Firebase Console</b>.<br/>2. מפעילים <b>Authentication → Email/Password</b>.<br/>3. יוצרים <b>Firestore Database</b> במצב Production ומגדירים את חוקי הגישה (ראו README).<br/>4. רושמים אפליקציית Web ומדביקים את פרטי התצורה במשתנה <b>FIREBASE_CONFIG</b> בראש הקובץ index.html ומעלים שוב לגיטהאב.</p>
       </div>
-      <div class="row">
-        <button class="btn btn-primary grow" type="button" id="driveSignInBtn">התחבר עם Google</button>
-        <button class="btn grow" type="button" id="driveSyncBtn" hidden>🔄 סנכרן עכשיו</button>
-        <button class="btn grow" type="button" id="driveSignOutBtn" hidden>התנתק</button>
+      <div id="fbAuthForm">
+        <label for="fbEmail">דוא״ל</label>
+        <input id="fbEmail" type="email" dir="ltr" placeholder="you@example.com" autocomplete="email"/>
+        <label for="fbPassword">סיסמה</label>
+        <input id="fbPassword" type="password" dir="ltr" placeholder="לפחות 6 תווים" autocomplete="current-password"/>
+        <div class="row" style="margin-top:14px">
+          <button class="btn btn-primary grow" type="button" id="fbSignUpBtn">📝 הרשמה</button>
+          <button class="btn grow" type="button" id="fbSignInBtn">🔑 התחברות</button>
+          <button class="btn grow" type="button" id="fbSyncBtn" hidden>🔄 סנכרן עכשיו</button>
+          <button class="btn grow" type="button" id="fbSignOutBtn" hidden>התנתק</button>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn grow" type="button" id="fbResetBtn">✉️ שכחתי סיסמה</button>
+        </div>
+        <p id="fbAuthMsg" class="hint" style="margin-top:10px" hidden></p>
       </div>
-      <p class="hint">הנתונים נשמרים בקובץ JSON נסתר בתיקיית האפליקציה של הדרייב (appDataFolder) — הוא לא מופיע בדרייב הרגיל ושייך רק לחשבון המחובר. בלי חיבור, הכל נשמר בדפדפן כרגיל.</p>
+      <p class="hint">הנתונים נשמרים במסמך פרטי משלך ב־Firestore — רק החשבון המחובר יכול לקרוא ולכתוב אותו. בלי חיבור, הכל נשמר בדפדפן כרגיל.</p>
     </section>
   </section>
 
-  <p class="footer">קופת חיסכון לילדים — גרסה עצמאית. הנתונים שלך, בדפדפן שלך.<br/>אין שרת ואין חשבון — מה ששמור כאן נשאר כאן.</p>
+  <p class="footer">קופת חיסכון לילדים — גרסה עצמאית. הנתונים שלך, בדפדפן שלך.<br/>בלי חיבור לסנכרון, אין שרת ואין חשבון — מה ששמור כאן נשאר כאן.</p>
 </main>
 
 <!-- SETUP -->
 <main class="wrap setup" id="setup" hidden>
   <h1>🐷 ברוכים הבאים לקופה!</h1>
-  <p>קופת חיסכון לילדים — יתרה, היסטוריה, דמי כיס, משימות, יעד חיסכון וכסף דמיוני. אפשר לפתוח קופה לכל ילד, והכל נשמר בדפדפן שלך — ואפשר גם לחבר Google Drive בהגדרות כדי שהקופות יעברו בין מכשירים.</p>
+  <p>קופת חיסכון לילדים — יתרה, היסטוריה, דמי כיס, משימות, יעד חיסכון וכסף דמיוני. אפשר לפתוח קופה לכל ילד, והכל נשמר בדפדפן שלך — ואפשר גם לחבר סנכרון Firebase בהגדרות כדי שהקופות יעברו בין מכשירים.</p>
   <form id="setupForm" class="card" style="margin-top:18px">
     <label for="setupName">שם הילד/ה</label>
     <input id="setupName" type="text" placeholder="למשל: דני" required/>
@@ -470,15 +481,26 @@
 var LS_KEY = "piggyBank.v1";
 var PROFILES_KEY = "piggyBank.profiles.v1";
 
-/* ---------- Google Drive sync (אופציונלי) ----------
-   כדי להפעיל: יוצרים OAuth Client ID מסוג Web application ב־Google Cloud
-   Console, מוסיפים את https://adiperry.github.io ל־Authorized JavaScript
-   origins, ומדביקים את ה־Client ID כאן במקום המחרוזת למטה.
-   בלי Client ID האפליקציה עובדת כרגיל לגמרי עם localStorage בלבד.
-   אין כאן שום Client ID אמיתי — צריך ליצור אחד בחשבון הגוגל שלכם. */
-var GOOGLE_CLIENT_ID = "PASTE_YOUR_CLIENT_ID_HERE";
-var DRIVE_FILE_NAME = "piggy-bank-profiles.json";
-var DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/userinfo.email";
+/* ---------- Firebase sync (אופציונלי) ----------
+   כדי להפעיל: יוצרים פרויקט Firebase, מפעילים Authentication עם
+   Email/Password, יוצרים Firestore Database, רושמים אפליקציית Web,
+   ומדביקים את פרטי התצורה כאן במקום מחרוזות ה־PASTE_YOUR_* למטה.
+   חובה: הפרויקט נשאר בתוכנית החינמית Spark בלבד — בלי חשבון חיוב
+   ובלי שדרוג ל־Blaze. אם המכסה החינמית נגמרת הסנכרון פשוט מפסיק
+   והאפליקציה ממשיכה לעבוד לוקאלית כרגיל.
+   בלי תצורה האפליקציה עובדת כרגיל לגמרי עם localStorage בלבד.
+   אין כאן שום מפתח אמיתי — צריך ליצור פרויקט בחשבון שלכם.
+   ה־SDK נטען דינמית מה־CDN של גוגל רק כשהסנכרון מוגדר; בלי תצורה
+   האפליקציה לא פונה לרשת בכלל. */
+var FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAiCN5djXjPE9OiQPbBcyNjq-sOkYcw6qs",
+  authDomain: "piggy-bank-app-eae6b.firebaseapp.com",
+  projectId: "piggy-bank-app-eae6b",
+  storageBucket: "piggy-bank-app-eae6b.firebasestorage.app",
+  messagingSenderId: "466083374600",
+  appId: "1:466083374600:web:4590c79b538f2d2be3d3bd"
+};
+var FIREBASE_SDK_VERSION = "10.12.2";
 var PROFILE_EMOJIS = ["🐷","🦁","🐶","🐱","🦄","🐸","🚀","⚽","🎨","🦊"];
 
 /* ---------- catalogs (generic, no personal data) ---------- */
@@ -649,7 +671,7 @@ function saveStore(){
   if(typeof viewMode !== "undefined" && viewMode==="shared") return; // never overwrite own data from a shared view
   if(!store) return;
   saveStoreLocal();
-  scheduleDriveUpload();
+  scheduleFirebaseUpload();
 }
 function loadState(){ // kept for compatibility with test hooks: returns active profile's state
   var st = loadStore();
@@ -784,139 +806,202 @@ function processDueSavings(st, today){
   return paid;
 }
 
-/* ---------- Google Drive sync (optional, needs GOOGLE_CLIENT_ID) ----------
-   Data lives in ONE JSON file in the signed-in user's appDataFolder (hidden,
-   per-user, not visible in normal Drive). Local-first: localStorage is the
-   source of truth; Drive is a synced copy. On sign-in, the newer copy wins
-   (by updatedAt / Drive modifiedTime); on every local change the file is
-   uploaded (debounced). The access token is kept in memory only. */
-var drive = { token:null, email:"", fileId:null, status:"off", lastSync:null,
-  gisLoaded:false, gisLoading:false, tokenClient:null, uploadTimer:null, autoTried:false };
+/* ---------- Firebase sync (optional, needs FIREBASE_CONFIG) ----------
+   One Firestore document per user at users/{uid}, holding the whole
+   profiles store plus updatedAt. Local-first: localStorage is the source
+   of truth; on sign-in the newer copy wins (by updatedAt, 5s skew
+   tolerance); on every local change the doc is uploaded (debounced 2s).
+   Auth state persists across loads (Firebase default LOCAL persistence).
+   SPARK PLAN ONLY: no billing account, no Blaze upgrade, ever. If the
+   free quota runs out, sync just stops (status "quota") — local data is
+   never lost and the app keeps working locally. */
+var fb = { app:null, auth:null, db:null, user:null, email:"", status:"off", lastSync:null,
+  uploadTimer:null, initTried:false, sdkLoading:false, sdkFailed:false, sdkLoadFailed:false,
+  dirty:false };
 
-function driveConfigured(){
-  return !!GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID !== "PASTE_YOUR_CLIENT_ID_HERE";
+function firebaseConfigured(){
+  if(!FIREBASE_CONFIG || typeof FIREBASE_CONFIG !== "object") return false;
+  var keys = ["apiKey", "authDomain", "projectId", "appId"];
+  for(var i=0; i<keys.length; i++){
+    var v = FIREBASE_CONFIG[keys[i]];
+    if(!v || typeof v !== "string" || v.indexOf("PASTE_YOUR_") === 0) return false;
+  }
+  return true;
 }
-function driveStatusText(){
-  if(!driveConfigured()) return { html:"<b>הסנכרון לא הוגדר עדיין.</b> צריך Client ID של גוגל — ראו את ההסבר למטה. בינתיים הכל נשמר בדפדפן כרגיל." };
-  if(drive.status==="connecting") return { html:"⏳ מתחבר ל־Google…" };
-  if(drive.status==="syncing") return { html:"🔄 מסנכרן ל־Drive…" };
-  if(drive.status==="ok") return { html:"✅ <b>מחובר ל־Google Drive</b>" + (drive.email ? " (" + escapeHtml(drive.email) + ")" : "") + (drive.lastSync ? " • סונכרן לאחרונה: " + drive.lastSync.toLocaleTimeString("he-IL", {hour:"2-digit", minute:"2-digit"}) : "") };
-  if(drive.status==="error") return { html:"⚠️ <b>שגיאת סנכרון.</b> הנתונים נשמרים בדפדפן כרגיל — נסו להתחבר שוב או ללחוץ ״סנכרן עכשיו״." };
-  return { html:"לא מחובר ל־Google Drive. התחברו כדי שהקופות יישמרו גם בדרייב ויעברו בין מכשירים." };
+function fbStatusText(){
+  if(!firebaseConfigured()) return { tone:"amber", html:"<b>הסנכרון לא הוגדר עדיין.</b> צריך להגדיר Firebase — ראו את ההסבר למטה. בינתיים הכל נשמר בדפדפן כרגיל." };
+  if(fb.status==="connecting") return { tone:"teal", html:"⏳ מתחבר…" };
+  if(fb.status==="syncing") return { tone:"teal", html:"🔄 מסנכרן…" };
+  if(fb.status==="ok") return { tone:"teal", html:"✅ <b>מחובר ומסונכרן</b>" + (fb.email ? " (" + escapeHtml(fb.email) + ")" : "") + (fb.lastSync ? " • סונכרן לאחרונה: " + fb.lastSync.toLocaleTimeString("he-IL", {hour:"2-digit", minute:"2-digit"}) : "") };
+  if(fb.status==="quota") return { tone:"amber", html:"⚠️ <b>הסנכרון לא זמין כרגע (המכסה החינמית הסתיימה).</b> הנתונים נשמרים כרגיל במכשיר הזה — שום דבר לא אבד." };
+  if(fb.status==="network") return { tone:"amber", html:"⚠️ <b>שגיאת רשת — הסנכרון לא זמין כרגע.</b> הנתונים נשמרים כרגיל במכשיר הזה." };
+  if(fb.status==="error") return { tone:"amber", html:"⚠️ <b>שגיאת סנכרון.</b> הנתונים נשמרים בדפדפן כרגיל — נסו להתחבר שוב או ללחוץ ״סנכרן עכשיו״." };
+  return { tone:"teal", html:"לא מחובר. התחברו עם מייל וסיסמה כדי שהקופות יישמרו גם בענן ויעברו בין מכשירים." };
 }
-function renderDriveStatus(){
-  var box = $("driveStatus");
+function renderFbStatus(){
+  var box = $("fbStatus");
   if(!box) return;
-  box.innerHTML = '<div class="banner teal" style="margin-top:0"><p style="margin:0">' + driveStatusText().html + '</p></div>';
-  $("driveSetupHint").hidden = driveConfigured();
-  $("driveSignInBtn").hidden = driveConfigured() && !!drive.token;
-  $("driveSyncBtn").hidden = !drive.token;
-  $("driveSignOutBtn").hidden = !drive.token;
+  var t = fbStatusText();
+  box.innerHTML = '<div class="banner ' + t.tone + '" style="margin-top:0"><p style="margin:0">' + t.html + '</p></div>';
+  var hint = $("fbSetupHint");
+  if(hint) hint.hidden = firebaseConfigured();
+  var configured = firebaseConfigured();
+  var signedIn = !!fb.user;
+  var su = $("fbSignUpBtn"), si = $("fbSignInBtn"), sy = $("fbSyncBtn"), so = $("fbSignOutBtn"),
+      rs = $("fbResetBtn"), em = $("fbEmail"), pw = $("fbPassword");
+  if(su) su.hidden = signedIn;
+  if(si) si.hidden = signedIn;
+  if(sy) sy.hidden = !signedIn;
+  if(so) so.hidden = !signedIn;
+  [su, si, rs, em, pw].forEach(function(el){ if(el) el.disabled = !configured; });
 }
-function driveSetStatus(s){ drive.status = s; renderDriveStatus(); }
+function fbSetStatus(s){ fb.status = s; renderFbStatus(); }
+/* "Dirty" = local changes not yet uploaded. It survives reloads (localStorage)
+   so a failed upload is retried on the next sync instead of being silently
+   dropped when the two copies look "in sync" within the 5s skew window. */
+function fbSetDirty(v){
+  fb.dirty = !!v;
+  try{
+    if(fb.dirty) localStorage.setItem("piggyBank.fbDirty", "1");
+    else localStorage.removeItem("piggyBank.fbDirty");
+  }catch(e){}
+}
+function fbShowAuthMsg(msg){
+  var el = $("fbAuthMsg");
+  if(!el) return;
+  if(!msg){ el.hidden = true; el.textContent = ""; return; }
+  el.hidden = false;
+  el.textContent = msg;
+}
+function fbAuthErrorText(e){
+  var code = (e && e.code) || "";
+  var map = {
+    "auth/email-already-in-use": "המייל הזה כבר רשום — נסו להתחבר.",
+    "auth/invalid-email": "כתובת המייל לא תקינה.",
+    "auth/weak-password": "הסיסמה חלשה מדי — צריך לפחות 6 תווים.",
+    "auth/user-not-found": "אין חשבון עם המייל הזה — נסו להירשם.",
+    "auth/wrong-password": "הסיסמה לא נכונה.",
+    "auth/invalid-credential": "המייל או הסיסמה לא נכונים.",
+    "auth/too-many-requests": "יותר מדי ניסיונות — נסו שוב מאוחר יותר.",
+    "auth/network-request-failed": "בעיית רשת — בדקו את החיבור ונסו שוב.",
+    "auth/user-disabled": "החשבון הזה מושבת.",
+    "auth/operation-not-allowed": "התחברות במייל וסיסמה לא מופעלת בפרויקט Firebase."
+  };
+  if(map[code]) return map[code];
+  if(code === "resource-exhausted" || /quota/i.test(code)) return "המכסה החינמית הסתיימה — הסנכרון לא זמין כרגע.";
+  return "שגיאה: " + ((e && e.message) ? e.message : "נסו שוב.");
+}
+/* Quota / service failures must never lose local data: classify so the
+   status line can tell the user what happened in plain Hebrew. */
+function fbClassifyError(e){
+  var code = String((e && e.code) || "");
+  var msg = String((e && e.message) || "");
+  var hay = code + " " + msg;
+  if(/resource-exhausted|RESOURCE_EXHAUSTED|quota/i.test(hay)) return "quota";
+  if(code === "unavailable" || /unavailable|network|failed to get document|offline|Failed to fetch|Load failed/i.test(hay)) return "network";
+  return "error";
+}
 
-function loadGis(){
+/* The SDK is loaded dynamically from Google's CDN (pinned version) and
+   only when sync is actually configured — with placeholder config the app
+   never touches the network and works fully offline. A test mock can
+   predefine window.firebase; then no download is attempted. */
+function loadFirebaseSdk(){
   return new Promise(function(resolve){
-    if(window.google && google.accounts && google.accounts.oauth2){ drive.gisLoaded = true; resolve(true); return; }
-    if(drive.gisLoading){
+    if(window.firebase && firebase.initializeApp && firebase.auth && firebase.firestore){ resolve(true); return; }
+    if(fb.sdkLoading){
       var waited = 0;
       var iv = setInterval(function(){
         waited += 200;
-        if(drive.gisLoaded){ clearInterval(iv); resolve(true); }
-        else if(waited > 15000){ clearInterval(iv); resolve(false); }
+        if(window.firebase && firebase.initializeApp){ clearInterval(iv); resolve(true); }
+        else if(waited > 20000){ clearInterval(iv); resolve(false); }
       }, 200);
       return;
     }
-    drive.gisLoading = true;
+    fb.sdkLoading = true;
+    var files = ["firebase-app-compat.js", "firebase-auth-compat.js", "firebase-firestore-compat.js"];
+    var i = 0;
     var done = false;
-    var finish = function(ok){ if(!done){ done = true; drive.gisLoading = false; resolve(ok); } };
-    var s = document.createElement("script");
-    s.src = "https://accounts.google.com/gsi/client"; s.async = true; s.defer = true;
-    s.onload = function(){ drive.gisLoaded = true; finish(true); };
-    s.onerror = function(){ finish(false); };
-    setTimeout(function(){ finish(false); }, 15000);
-    document.head.appendChild(s);
+    var finish = function(ok){ if(!done){ done = true; fb.sdkLoading = false; if(!ok) fb.sdkLoadFailed = true; resolve(ok); } };
+    var loadNext = function(){
+      if(i >= files.length){ finish(true); return; }
+      var s = document.createElement("script");
+      s.src = "https://www.gstatic.com/firebasejs/" + FIREBASE_SDK_VERSION + "/" + files[i];
+      s.onload = function(){ i++; loadNext(); };
+      s.onerror = function(){ finish(false); };
+      setTimeout(function(){ finish(false); }, 20000);
+      document.head.appendChild(s);
+    };
+    loadNext();
   });
 }
-function driveRequestToken(silent){
-  return loadGis().then(function(ok){
-    if(!ok) throw new Error("Google Sign-In library failed to load");
-    return new Promise(function(resolve, reject){
-      if(!drive.tokenClient){
-        try{
-          drive.tokenClient = google.accounts.oauth2.initTokenClient({
-            client_id: GOOGLE_CLIENT_ID,
-            scope: DRIVE_SCOPE,
-            callback: function(resp){
-              if(resp && resp.access_token){ drive.token = resp.access_token; resolve(resp.access_token); }
-              else reject(new Error("no access token"));
-            },
-            error_callback: function(){ reject(new Error("token request failed")); }
-          });
-        }catch(e){ reject(e); return; }
-      }
-      try{ drive.tokenClient.requestAccessToken({ prompt: silent ? "" : "consent" }); }
-      catch(e){ reject(e); }
-    });
+function fbEnsureInit(){
+  if(fb.app) return Promise.resolve(true);
+  if(!firebaseConfigured()) return Promise.resolve(false);
+  try{ fb.dirty = localStorage.getItem("piggyBank.fbDirty") === "1"; }catch(e){}
+  return loadFirebaseSdk().then(function(ok){
+    if(!ok){ fb.sdkFailed = true; return false; }
+    try{
+      fb.app = firebase.initializeApp(FIREBASE_CONFIG);
+      fb.auth = firebase.auth();
+      fb.db = firebase.firestore();
+      fb.auth.onAuthStateChanged(function(user){
+        if(user){
+          fb.user = user;
+          fb.email = user.email || "";
+          fbOnSignedIn();
+        }else{
+          fb.user = null;
+          fb.email = "";
+          fbSetStatus("off");
+        }
+      });
+      return true;
+    }catch(e){ fb.sdkFailed = true; return false; }
   });
 }
-function driveFetch(url, opts, retried){
-  opts = opts || {};
-  opts.headers = opts.headers || {};
-  opts.headers.Authorization = "Bearer " + drive.token;
-  return fetch(url, opts).then(function(res){
-    if(res.status===401 && !retried){
-      return driveRequestToken(true).then(function(){ return driveFetch(url, opts, true); });
-    }
-    return res;
+function firebaseInit(){
+  if(fb.initTried || !firebaseConfigured()) return;
+  fb.initTried = true;
+  fbEnsureInit().then(function(ok){
+    if(!ok){ fbSetStatus(fb.sdkLoadFailed ? "network" : "error"); }
+    renderFbStatus();
   });
 }
-function driveFindFile(){
-  var q = "name='" + DRIVE_FILE_NAME + "' and 'appDataFolder' in parents and trashed=false";
-  return driveFetch("https://www.googleapis.com/drive/v3/files?q=" + encodeURIComponent(q) + "&spaces=appDataFolder&fields=files(id,modifiedTime)")
-    .then(function(res){ if(!res.ok) throw new Error("Drive list failed: " + res.status); return res.json(); })
-    .then(function(j){ return (j.files && j.files[0]) || null; });
+function fbOnSignedIn(){
+  if(!fb.user) return;
+  fbSetStatus("syncing");
+  fbSyncFromCloud().then(function(ok){
+    if(!fb.user) return; // signed out meanwhile
+    if(ok){ fb.lastSync = new Date(); fbSetStatus("ok"); }
+    renderAll();
+  });
 }
-function driveDownload(fileId){
-  return driveFetch("https://www.googleapis.com/drive/v3/files/" + encodeURIComponent(fileId) + "?alt=media")
-    .then(function(res){ if(!res.ok) throw new Error("Drive download failed: " + res.status); return res.json(); });
-}
-function driveUpload(jsonStr, fileId){
-  var meta = { name: DRIVE_FILE_NAME, mimeType: "application/json" };
-  if(!fileId) meta.parents = ["appDataFolder"];
-  var boundary = "piggybank" + Date.now().toString(36);
-  var body = "--" + boundary + "\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n" + JSON.stringify(meta)
-    + "\r\n--" + boundary + "\r\nContent-Type: application/json\r\n\r\n" + jsonStr
-    + "\r\n--" + boundary + "--";
-  var url = fileId
-    ? "https://www.googleapis.com/upload/drive/v3/files/" + encodeURIComponent(fileId) + "?uploadType=multipart"
-    : "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart";
-  return driveFetch(url, { method: fileId ? "PATCH" : "POST",
-    headers: { "Content-Type": 'multipart/related; boundary="' + boundary + '"' }, body: body })
-    .then(function(res){ if(!res.ok) throw new Error("Drive upload failed: " + res.status); return res.json(); });
-}
-function driveUploadNow(){
-  if(!drive.token || !store) return Promise.resolve(false);
-  var payload = JSON.stringify(store);
-  return driveUpload(payload, drive.fileId).then(function(j){
-    if(j && j.id) drive.fileId = j.id;
-    store.updatedAt = Date.now();
-    saveStoreLocal(); // mark local copy as fresh so we don't re-adopt the cloud copy
-    drive.lastSync = new Date();
-    driveSetStatus("ok");
+function fbUploadNow(){
+  if(!fb.user || !fb.db || !store) return Promise.resolve(false);
+  var payload;
+  try{ payload = JSON.parse(JSON.stringify(store)); }
+  catch(e){ return Promise.resolve(false); }
+  return fb.db.collection("users").doc(fb.user.uid).set(payload).then(function(){
+    fb.lastSync = new Date();
+    fbSetDirty(false);
+    fbSetStatus("ok");
     return true;
-  }).catch(function(){
-    driveSetStatus("error");
+  }).catch(function(e){
+    fbSetDirty(true);
+    fbSetStatus(fbClassifyError(e));
     return false;
   });
 }
-function scheduleDriveUpload(){
-  if(!drive.token || !store) return;
-  if(drive.uploadTimer) clearTimeout(drive.uploadTimer);
-  driveSetStatus("syncing");
-  drive.uploadTimer = setTimeout(function(){ driveUploadNow(); }, 2000);
+function scheduleFirebaseUpload(){
+  if(!fb.user || !fb.db || !store) return;
+  if(fb.uploadTimer) clearTimeout(fb.uploadTimer);
+  fbSetDirty(true);
+  fbSetStatus("syncing");
+  fb.uploadTimer = setTimeout(function(){ fbUploadNow(); }, 2000);
 }
-function driveAdoptCloud(cloud){
+function fbAdoptCloud(cloud){
+  if(!cloud || cloud.v!==1 || !Array.isArray(cloud.profiles) || !cloud.profiles.length) return false;
   var st = { v:1, activeId: cloud.activeId, updatedAt: cloud.updatedAt || Date.now(), profiles: [] };
   cloud.profiles.forEach(function(p){
     st.profiles.push({ id: p.id, name: typeof p.name==="string" ? p.name : "",
@@ -927,76 +1012,96 @@ function driveAdoptCloud(cloud){
   if(!st.profiles.some(function(p){ return p.id===st.activeId; })) st.activeId = st.profiles[0].id;
   store = st;
   state = activeProfile().state;
+  fbSetDirty(false); // local now equals the cloud copy
   saveStoreLocal();
   renderAll();
   return true;
 }
-function driveSyncFromCloud(){
-  return driveFindFile().then(function(f){
-    if(!f){
-      if(store) return driveUploadNow();
+function fbSyncFromCloud(){
+  if(!fb.user || !fb.db) return Promise.resolve(false);
+  return fb.db.collection("users").doc(fb.user.uid).get().then(function(snap){
+    if(!snap.exists){
+      if(store) return fbUploadNow();
       return false;
     }
-    drive.fileId = f.id;
-    return driveDownload(f.id).then(function(cloud){
-      if(!cloud || cloud.v!==1 || !Array.isArray(cloud.profiles) || !cloud.profiles.length){
-        return store ? driveUploadNow() : false; // cloud copy unusable: overwrite with local
-      }
-      var cloudTime = Date.parse(f.modifiedTime) || 0;
-      var localTime = (store && store.updatedAt) || 0;
-      if(!store){ driveAdoptCloud(cloud); return true; }
-      if(cloudTime > localTime + 5000){ driveAdoptCloud(cloud); return true; } // cloud is newer
-      if(localTime > cloudTime + 5000){ return driveUploadNow(); } // local is newer
-      return true; // in sync
-    });
-  });
-}
-function driveSignIn(){
-  if(!driveConfigured()){ renderDriveStatus(); return Promise.resolve(false); }
-  driveSetStatus("connecting");
-  return driveRequestToken(false).then(function(){
-    return driveFetch("https://www.googleapis.com/oauth2/v3/userinfo")
-      .then(function(r){ return r.ok ? r.json() : null; })
-      .then(function(u){ if(u && u.email) drive.email = u.email; })
-      .catch(function(){ /* email is nice-to-have only */ });
-  }).then(function(){
-    return driveSyncFromCloud();
-  }).then(function(){
-    try{ localStorage.setItem("piggyBank.driveAuto", "1"); }catch(e){}
-    drive.lastSync = new Date();
-    driveSetStatus("ok");
-    renderAll();
-    return true;
-  }).catch(function(){
-    drive.token = null;
-    driveSetStatus("error");
+    var cloud = snap.data();
+    if(!cloud || cloud.v!==1 || !Array.isArray(cloud.profiles) || !cloud.profiles.length){
+      return store ? fbUploadNow() : false; // cloud copy unusable: overwrite with local
+    }
+    var cloudTime = cloud.updatedAt || 0;
+    var localTime = (store && store.updatedAt) || 0;
+    if(!store){ fbAdoptCloud(cloud); return true; }
+    if(cloudTime > localTime + 5000){ fbAdoptCloud(cloud); return true; } // cloud is newer
+    if(localTime > cloudTime + 5000){ return fbUploadNow(); } // local is newer
+    if(fb.dirty){ return fbUploadNow(); } // unsynced local changes: push even inside the skew window
+    return true; // in sync
+  }).catch(function(e){
+    fbSetStatus(fbClassifyError(e));
     return false;
   });
 }
-function driveSignOut(){
-  if(drive.token && window.google && google.accounts && google.accounts.oauth2){
-    try{ google.accounts.oauth2.revoke(drive.token, function(){}); }catch(e){}
-  }
-  drive.token = null; drive.email = ""; drive.fileId = null;
-  if(drive.uploadTimer){ clearTimeout(drive.uploadTimer); drive.uploadTimer = null; }
-  try{ localStorage.removeItem("piggyBank.driveAuto"); }catch(e){}
-  driveSetStatus("off");
-  renderAll();
+function fbAuthFormValues(){
+  var email = $("fbEmail") ? $("fbEmail").value.trim() : "";
+  var password = $("fbPassword") ? $("fbPassword").value : "";
+  return { email: email, password: password };
 }
-function driveTrySilentSignIn(){
-  if(drive.autoTried || !driveConfigured()) return;
-  drive.autoTried = true;
-  var auto = null;
-  try{ auto = localStorage.getItem("piggyBank.driveAuto"); }catch(e){}
-  if(auto !== "1" || !store) return;
-  driveRequestToken(true).then(function(){
-    return driveSyncFromCloud();
-  }).then(function(){
-    drive.lastSync = new Date();
-    driveSetStatus("ok");
-    renderAll();
-  }).catch(function(){
-    drive.token = null; // stay signed out quietly; user can sign in from Settings
+function fbSignUp(){
+  fbShowAuthMsg("");
+  if(!firebaseConfigured()){ renderFbStatus(); return Promise.resolve(false); }
+  var vals = fbAuthFormValues();
+  if(!vals.email){ fbShowAuthMsg("הכניסו כתובת מייל."); return Promise.resolve(false); }
+  if(vals.password.length < 6){ fbShowAuthMsg("הסיסמה חייבת להיות לפחות 6 תווים."); return Promise.resolve(false); }
+  fbSetStatus("connecting");
+  return fbEnsureInit().then(function(ok){
+    if(!ok){ fbSetStatus(fb.sdkLoadFailed ? "network" : "error"); fbShowAuthMsg("לא ניתן להתחבר ל־Firebase כרגע — בדקו את החיבור לאינטרנט."); return false; }
+    return fb.auth.createUserWithEmailAndPassword(vals.email, vals.password).then(function(){
+      return true; // onAuthStateChanged handles the sync + status
+    }).catch(function(e){
+      fbSetStatus(fbClassifyError(e));
+      fbShowAuthMsg(fbAuthErrorText(e));
+      return false;
+    });
+  });
+}
+function fbSignIn(){
+  fbShowAuthMsg("");
+  if(!firebaseConfigured()){ renderFbStatus(); return Promise.resolve(false); }
+  var vals = fbAuthFormValues();
+  if(!vals.email){ fbShowAuthMsg("הכניסו כתובת מייל."); return Promise.resolve(false); }
+  if(!vals.password){ fbShowAuthMsg("הכניסו סיסמה."); return Promise.resolve(false); }
+  fbSetStatus("connecting");
+  return fbEnsureInit().then(function(ok){
+    if(!ok){ fbSetStatus(fb.sdkLoadFailed ? "network" : "error"); fbShowAuthMsg("לא ניתן להתחבר ל־Firebase כרגע — בדקו את החיבור לאינטרנט."); return false; }
+    return fb.auth.signInWithEmailAndPassword(vals.email, vals.password).then(function(){
+      return true; // onAuthStateChanged handles the sync + status
+    }).catch(function(e){
+      fbSetStatus(fbClassifyError(e));
+      fbShowAuthMsg(fbAuthErrorText(e));
+      return false;
+    });
+  });
+}
+function fbSignOut(){
+  if(fb.uploadTimer){ clearTimeout(fb.uploadTimer); fb.uploadTimer = null; }
+  fbShowAuthMsg("");
+  var done = function(){ fb.user = null; fb.email = ""; fbSetStatus("off"); renderAll(); return true; };
+  if(fb.auth){ return fb.auth.signOut().then(done).catch(done); }
+  return Promise.resolve(done());
+}
+function fbResetPassword(){
+  fbShowAuthMsg("");
+  if(!firebaseConfigured()){ renderFbStatus(); return Promise.resolve(false); }
+  var email = fbAuthFormValues().email;
+  if(!email){ fbShowAuthMsg("הכניסו כתובת מייל כדי לשלוח קישור לאיפוס סיסמה."); return Promise.resolve(false); }
+  return fbEnsureInit().then(function(ok){
+    if(!ok){ fbShowAuthMsg("לא ניתן להתחבר ל־Firebase כרגע — בדקו את החיבור לאינטרנט."); return false; }
+    return fb.auth.sendPasswordResetEmail(email).then(function(){
+      fbShowAuthMsg("נשלח קישור לאיפוס סיסמה ל־" + email + ".");
+      return true;
+    }).catch(function(e){
+      fbShowAuthMsg(fbAuthErrorText(e));
+      return false;
+    });
   });
 }
 
@@ -1205,7 +1310,7 @@ function renderAll(){
   renderGoalView(sums.balance);
   renderTabs();
   renderProfiles();
-  renderDriveStatus();
+  renderFbStatus();
 }
 
 function renderProfiles(){
@@ -1686,16 +1791,17 @@ function bindEvents(){
     $("profileForm").reset();
   });
 
-  $("driveSignInBtn").addEventListener("click", function(){ driveSignIn(); });
-  $("driveSyncBtn").addEventListener("click", function(){
-    driveSetStatus("syncing");
-    driveSyncFromCloud().then(function(){
-      drive.lastSync = new Date();
-      driveSetStatus("ok");
+  $("fbSignUpBtn").addEventListener("click", function(){ fbSignUp(); });
+  $("fbSignInBtn").addEventListener("click", function(){ fbSignIn(); });
+  $("fbSyncBtn").addEventListener("click", function(){
+    fbSetStatus("syncing");
+    fbSyncFromCloud().then(function(ok){
+      if(ok){ fb.lastSync = new Date(); fbSetStatus("ok"); }
       renderAll();
-    }).catch(function(){ driveSetStatus("error"); });
+    }).catch(function(){ fbSetStatus("error"); });
   });
-  $("driveSignOutBtn").addEventListener("click", function(){ driveSignOut(); });
+  $("fbSignOutBtn").addEventListener("click", function(){ fbSignOut(); });
+  $("fbResetBtn").addEventListener("click", function(){ fbResetPassword(); });
 
   $("shareBtn").addEventListener("click", function(){
     var btn = $("shareBtn");
@@ -1732,7 +1838,6 @@ function bindEvents(){
     try{ localStorage.removeItem(PROFILES_KEY); }catch(e){}
     try{ localStorage.removeItem(LS_KEY); }catch(e){}
     try{ localStorage.removeItem(LS_KEY + ".bak"); }catch(e){}
-    try{ localStorage.removeItem("piggyBank.driveAuto"); }catch(e){}
     store = null;
     state = null;
     setKidMode(false);
@@ -1748,6 +1853,7 @@ function bindEvents(){
 function boot(){
   bindEvents();
   resetTxForm();
+  renderFbStatus(); // show the sync card state (e.g. "not configured") even on the setup screen
   var params = new URLSearchParams(location.search);
   var sharedParam = params.get("v");
   if(sharedParam){
@@ -1775,7 +1881,7 @@ function bootOwner(){
   store.profiles.forEach(function(p){ processDueForProfile(p, today); }); // dues run for ALL profiles, not just the active one
   if(JSON.stringify(store)!==before) saveStoreLocal();
   showApp(); showView("home"); renderAll();
-  driveTrySilentSignIn();
+  firebaseInit(); // if configured, restores the Firebase session and syncs
 }
 document.addEventListener("DOMContentLoaded", boot);
 
@@ -1797,7 +1903,7 @@ window.PiggyTest = {
   saveState: saveState,
   LS_KEY: LS_KEY,
   PROFILES_KEY: PROFILES_KEY,
-  GOOGLE_CLIENT_ID: GOOGLE_CLIENT_ID,
+  FIREBASE_CONFIG: FIREBASE_CONFIG,
   getStore: function(){ return store; },
   loadStore: loadStore,
   switchProfile: switchProfile,
@@ -1805,11 +1911,16 @@ window.PiggyTest = {
   renameProfile: renameProfile,
   deleteProfile: deleteProfile,
   activeProfile: activeProfile,
-  driveConfigured: driveConfigured,
-  getDriveStatus: function(){ return { configured: driveConfigured(), signedIn: !!drive.token, email: drive.email, fileId: drive.fileId, status: drive.status }; },
-  driveSignIn: driveSignIn,
-  driveSignOut: driveSignOut,
-  driveSyncFromCloud: driveSyncFromCloud,
+  firebaseConfigured: firebaseConfigured,
+  getFirebaseStatus: function(){ return { configured: firebaseConfigured(), signedIn: !!fb.user, email: fb.email, status: fb.status, lastSync: fb.lastSync }; },
+  fbSignIn: fbSignIn,
+  fbSignUp: fbSignUp,
+  fbSignOut: fbSignOut,
+  fbResetPassword: fbResetPassword,
+  fbSyncFromCloud: fbSyncFromCloud,
+  fbUploadNow: fbUploadNow,
+  fbAdoptCloud: fbAdoptCloud,
+  fbEnsureInit: fbEnsureInit,
   boot: boot
 };
 </script>

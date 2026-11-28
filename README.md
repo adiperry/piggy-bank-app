@@ -28,10 +28,10 @@ runs entirely in the browser. No server, no account, no install. Just open
   משימות, דמי כיס, חיסכון קבוע ויעד משלה. אפשר ליצור, לשנות שם ולמחוק
   (אי אפשר למחוק את הקופה האחרונה). נתונים ישנים מהגרסה של קופה אחת
   עוברים אוטומטית לקופה הראשונה.
-- ☁️ **סנכרון Google Drive (אופציונלי)** — מתחברים עם חשבון גוגל והקופות
-  נשמרות גם בדרייב של אותו חשבון (קובץ JSON נסתר בתיקיית האפליקציה,
-  appDataFolder), כך שהן עוברות בין מכשירים. בלי חיבור, הכל נשמר בדפדפן
-  בלבד. דורש Client ID של גוגל — ראו "הפעלת סנכרון Google Drive" למטה.
+- ☁️ **סנכרון Firebase (אופציונלי)** — נרשמים עם מייל וסיסמה והקופות
+  נשמרות בענן (Firestore), כך שהן עוברות בין מכשירים. בלי חיבור, הכל נשמר
+  בדפדפן בלבד. דורש פרויקט Firebase — ראו "הפעלת סנכרון Firebase" למטה.
+  חובה: התוכנית החינמית Spark בלבד — בלי כרטיס אשראי ובלי שדרוג ל־Blaze.
 - 🔗 **שיתוף לצפייה** — יוצר קישור עם הנתונים מקודדים בו; מי שפותח אותו רואה
   את הקופה (יתרה, היסטוריה, יעד, גרף) אבל לא יכול לערוך
 
@@ -60,29 +60,57 @@ Once GitHub Pages is enabled (see below), the app will be live here:
 
 **https://adiperry.github.io/piggy-bank-app/**
 
-## הפעלת סנכרון Google Drive / Enabling Google Drive sync
+## הפעלת סנכרון Firebase / Enabling Firebase sync
 
-סנכרון הדרייב אופציונלי ודורש מזהה לקוח של גוגל (OAuth Client ID):
+סנכרון Firebase אופציונלי. ההגדרה חד־פעמית, בפרויקט Firebase **בחינם**:
 
-1. נכנסים ל־[Google Cloud Console](https://console.cloud.google.com/) עם
-   חשבון הגוגל שרוצים לסנכרן אליו, ויוצרים פרויקט (אפשר להשתמש בפרויקט קיים).
-2. מפעילים את **Google Drive API** לפרויקט (APIs & Services → Library).
-3. יוצרים **OAuth client ID** מסוג Web application (APIs & Services →
-   Credentials → Create Credentials → OAuth client ID). אם זו הפעם הראשונה,
-   צריך קודם להגדיר את מסך ההסכמה (OAuth consent screen) — מספיק למלא שם
-   אפליקציה, לבחור External ולשמור.
-4. מוסיפים את `https://adiperry.github.io` לרשימת **Authorized JavaScript
-   origins** (אין צורך ב־Authorized redirect URIs — האפליקציה משתמשת ב־GIS
-   token client, בלי redirect).
-5. מדביקים את ה־Client ID במשתנה `GOOGLE_CLIENT_ID` בראש הקובץ `index.html`
-   (במקום `"PASTE_YOUR_CLIENT_ID_HERE"`) ומעלים שוב לגיטהאב.
-6. פותחים את האפליקציה, נכנסים להגדרות → "☁️ סנכרון Google Drive" →
-   "התחבר עם Google" ובוחרים את אותו חשבון גוגל.
+⚠️ **חובה — לא לשלם שום דבר:** הפרויקט חייב להישאר בתוכנית החינמית
+**Spark** בלבד — **לא לחבר כרטיס אשראי / לא לשדרג ל־Blaze**. אם המכסה
+החינמית נגמרת הסנכרון פשוט מפסיק והאפליקציה ממשיכה לעבוד לוקאלית.
+המכסה החינמית (50 אלף קריאות ו־20 אלף כתיבות ביום, גיגה אחסון) גדולה
+בהרבה ממה שקופה משפחתית צריכה.
 
-הקופות נשמרות בקובץ `piggy-bank-profiles.json` בתיקיית האפליקציה הנסתרת של
-הדרייב (appDataFolder) — הוא לא מופיע בדרייב הרגיל ושייך רק לחשבון המחובר.
-הסנכרון הוא local-first: הדפדפן הוא מקור האמת, והדרייב הוא עותק מסונכרן;
-בכניסה, העותק החדש יותר (לפי חותמת זמן) מנצח.
+**No payment, ever:** the project must stay on the free **Spark** plan —
+**do not attach a billing account / do not upgrade to Blaze**. If the free
+quota runs out, sync simply stops and the app keeps working locally.
+
+1. נכנסים ל־[Firebase Console](https://console.firebase.google.com/) עם
+   חשבון הגוגל שרוצים לסנכרן אליו, ויוצרים פרויקט (אפשר להשתמש בפרויקט
+   קיים). **לא מפעילים שדרוג ל־Blaze ולא מחברים אמצעי תשלום.**
+2. מפעילים התחברות במייל וסיסמה: Build → Authentication → Sign-in method
+   → Email/Password → Enable → Save.
+3. יוצרים מסד נתונים: Build → Firestore Database → Create database →
+   Start in **production mode** (לא test mode) ובוחרים אזור.
+4. מגדירים את חוקי הגישה (Firestore Database → Rules) — רק המשתמש עצמו
+   יכול לקרוא ולכתוב את המסמך שלו:
+   Set the access rules (Firestore Database → Rules) — each user can only
+   read and write their own document:
+   ```javascript
+   rules_version = '2';
+   service cloud.firestore {
+     match /databases/{database}/documents {
+       match /users/{userId} {
+         allow read, write: if request.auth != null && request.auth.uid == userId;
+       }
+     }
+   }
+   ```
+   ולוחצים Publish.
+5. רושמים אפליקציית Web: Project settings → Your apps → Web app (`</>`)
+   → נותנים שם (למשל piggy-bank) → Register app — ומעתיקים את אובייקט
+   ה־`firebaseConfig` שמוצג.
+6. מדביקים את הערכים במשתנה `FIREBASE_CONFIG` בראש הקובץ `index.html`
+   (במקום מחרוזות ה־`"PASTE_YOUR_*_HERE"`) ומעלים שוב לגיטהאב.
+7. פותחים את האפליקציה, נכנסים להגדרות → "☁️ סנכרון Firebase" →
+   ממלאים מייל וסיסמה (לפחות 6 תווים) ולוחצים "📝 הרשמה" (בפעם הראשונה)
+   או "🔑 התחברות". יש גם "✉️ שכחתי סיסמה" לאיפוס במייל.
+
+כל משתמש רואה רק את הקופות של עצמו — המסמך ב־Firestore הוא
+`users/{uid}` ומכיל את כל הפרופילים של אותו חשבון. הסנכרון הוא
+local-first: הדפדפן הוא מקור האמת, והענן הוא עותק מסונכרן; בכניסה,
+העותק החדש יותר (לפי חותמת זמן) מנצח. אם הסנכרון נכשל — למשל בגלל
+סיום המכסה החינמית — האפליקציה מציגה הודעה בעברית בכרטיס הסנכרון
+וממשיכה לעבוד לוקאלית, בלי לאבד נתונים.
 
 ## פרטיות / Privacy
 
@@ -90,12 +118,12 @@ Once GitHub Pages is enabled (see below), the app will be live here:
   All data is stored in the browser's `localStorage` — on the user's own device.
 - אין שרת, אין חשבון, אין שליחת נתונים לשום מקום, אין מעקב.
   No server, no account, no data sent anywhere, no tracking.
-- סנכרון Google Drive (אופציונלי) שולח את הנתונים רק לדרייב של החשבון
-  שהמשתמש התחבר איתו — קובץ JSON נסתר בתיקיית האפליקציה (appDataFolder).
-  הטוקן נשמר בזיכרון בלבד, לא ב־localStorage.
-  Optional Google Drive sync sends the data only to the signed-in account's
-  Drive — a hidden JSON file in the appDataFolder. The token lives in memory
-  only, never in localStorage.
+- סנכרון Firebase (אופציונלי) שולח את הנתונים למסמך פרטי ב־Firestore
+  (`users/{uid}`) ששייך רק לחשבון המחובר — חוקי הגישה חוסמים כל חשבון
+  אחר. בלי חיבור, שום דבר לא יוצא מהדפדפן.
+  Optional Firebase sync sends the data to a private Firestore document
+  (`users/{uid}`) owned by the signed-in account only — the security rules
+  block every other account. Without signing in, nothing leaves the browser.
 - קישור השיתוף מכיל את הנתונים בתוכו (מקודד ודחוס) — מי שמקבל אותו רואה רק
   את מה שהיוצר בחר לשתף, ואי אפשר לערוך דרכו.
   The share link carries the data inside it (encoded and compressed) — whoever
@@ -120,20 +148,28 @@ Or via the website: Settings → Pages → Deploy from a branch → `main` / `(r
 
 ## פיתוח / Development
 
-- קובץ אחד: `index.html` — בלי build, בלי תלויות, בלי CDN. עובד גם מ־`file://`.
-  A single file: `index.html` — no build step, no dependencies, no CDN.
-  Works from `file://` too.
+- קובץ אחד: `index.html` — בלי build, בלי תלויות, בלי CDN (ה־SDK של Firebase
+  נטען מה־CDN של גוגל רק כשהסנכרון מוגדר; בלי תצורה האפליקציה לא פונה לרשת
+  בכלל). עובד גם מ־`file://`.
+  A single file: `index.html` — no build step, no dependencies, no CDN (the
+  Firebase SDK is loaded from Google's CDN only when sync is configured;
+  without config the app makes no network requests at all). Works from
+  `file://` too.
 - סכומים נשמרים באגורות (מספרים שלמים) כדי להימנע משגיאות עיגול.
   Amounts are stored in agorot (integers) to avoid floating-point errors.
 - בדיקות: `node` + headless Chromium דרך `puppeteer-core` (ראו `/tmp/piggy-test`
   — לא חלק מהריפו): מעבר בין פרופילים, הגירה מהפורמט הישן, דמי כיס וחיסכון
-  קבוע לכל פרופיל, מחיקה ושינוי שם, מצב ילד, קישור שיתוף, ונתיבי ה־Drive
-  (עם fetch מדומה — סבב חי מול גוגל דורש Client ID אמיתי).
+  קבוע לכל פרופיל, מחיקה ושינוי שם, מצב ילד, קישור שיתוף, ונתיבי ה־Firebase
+  (עם Firebase SDK מדומה — סבב חי מול Firebase דורש תצורה אמיתית; כולל
+  בדיקת שגיאת מכסה resource-exhausted — הסטטוס מציג הודעה בעברית והנתונים
+  המקומיים נשארים שלמים).
   Tests: `node` + headless Chromium via `puppeteer-core` (see `/tmp/piggy-test`
   — not part of the repo): profile switching, migration from the old format,
   per-profile allowance and recurring savings, rename/delete, kid mode, share
-  links, and the Drive code paths (with a mocked fetch — a live Google
-  round-trip needs a real Client ID).
+  links, and the Firebase code paths (with a mocked Firebase SDK — a live
+  Firebase round-trip needs a real config; including a resource-exhausted
+  quota-error check — the status shows a Hebrew message and local data stays
+  intact).
 
 ## רישיון / License
 
