@@ -506,7 +506,7 @@ var FIREBASE_SDK_VERSION = "10.12.2";
    Empty = App Check not activated yet. Filled in once the key is created in
    the Firebase console; enforcement is turned on only AFTER this code is live
    and verified, otherwise sign-in would break. */
-var APP_CHECK_SITE_KEY = "";
+var APP_CHECK_SITE_KEY = "6LfEHTcuAAAAAHEf_CtCHmyxk7GuiLaGXgU2w32T"; // reCAPTCHA site key (public) — app registered in Firebase App Check under Fraud Defense (reCAPTCHA Enterprise)
 var PROFILE_EMOJIS = ["🐷","🦁","🐶","🐱","🦄","🐸","🚀","⚽","🎨","🦊"];
 
 /* ---------- catalogs (generic, no personal data) ---------- */
@@ -962,7 +962,7 @@ function fbEnsureInit(){
          key is configured. Without a key this is skipped and nothing changes. */
       try{
         if(APP_CHECK_SITE_KEY && firebase.appCheck){
-          firebase.appCheck().activate(APP_CHECK_SITE_KEY, true);
+          firebase.appCheck().activate(new firebase.appCheck.ReCaptchaEnterpriseProvider(APP_CHECK_SITE_KEY), true);
         }
       }catch(e){}
       fb.auth = firebase.auth();
