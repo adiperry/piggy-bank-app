@@ -289,6 +289,47 @@
     </section>
   </section>
 
+  <!-- SAVINGS -->
+  <section id="view-savings" hidden>
+    <section class="card">
+      <h2>💰 חיסכון קבוע</h2>
+      <p class="card-sub">סכום קבוע או אחוז קבוע מהיתרה, שנכנס אוטומטית כהכנסה ליתרה כל שבוע או כל חודש — כמו דמי כיס. כל תשלום נרשם בהיסטוריה. זה לא קשור ליעד החיסכון — היעד לא משתנה.</p>
+      <form id="savingsForm" class="parent-only">
+        <label for="svMode">סוג החיסכון</label>
+        <select id="svMode"><option value="fixed">סכום קבוע (₪)</option><option value="percent">אחוז קבוע מהיתרה (%)</option></select>
+        <div id="svAmountWrap">
+          <label for="svAmount">סכום (₪)</label>
+          <input id="svAmount" type="number" min="1" step="1" placeholder="למשל 10"/>
+        </div>
+        <div id="svPercentWrap" hidden>
+          <label for="svPercent">אחוז מהיתרה (1–100)</label>
+          <input id="svPercent" type="number" min="1" max="100" value="10"/>
+        </div>
+        <label for="svFreq">תדירות</label>
+        <select id="svFreq"><option value="weekly">כל שבוע</option><option value="monthly">כל חודש</option></select>
+        <div id="svWeekdayWrap">
+          <label for="svWeekday">יום בשבוע</label>
+          <select id="svWeekday">
+            <option value="0">ראשון</option><option value="1">שני</option><option value="2">שלישי</option>
+            <option value="3">רביעי</option><option value="4">חמישי</option><option value="5" selected>שישי</option><option value="6">שבת</option>
+          </select>
+        </div>
+        <div id="svDayWrap" hidden>
+          <label for="svDay">יום בחודש (1–28)</label>
+          <input id="svDay" type="number" min="1" max="28" value="1"/>
+        </div>
+        <label style="display:flex;gap:8px;align-items:center;font-weight:800;color:var(--text)">
+          <input type="checkbox" id="svEnabled" checked style="width:auto"/> חיסכון קבוע פעיל
+        </label>
+        <div class="row" style="margin-top:14px">
+          <button class="btn btn-primary grow" type="submit">שמור חיסכון קבוע</button>
+          <button class="btn btn-danger" type="button" id="svDeleteBtn">מחק חיסכון קבוע</button>
+        </div>
+      </form>
+      <div id="savingsStatus" style="margin-top:14px"></div>
+    </section>
+  </section>
+
   <!-- GOAL -->
   <section id="view-goal" hidden>
     <section class="card">
@@ -477,7 +518,7 @@ function advanceDue(iso, freq, weekday, dayOfMonth){
 
 /* ---------- state ---------- */
 function emptyState(name){
-  return { v:1, name:name||"", txs:[], tasks:[], allowance:null, goal:null };
+  return { v:1, name:name||"", txs:[], tasks:[], allowance:null, goal:null, savings:null };
 }
 function loadState(){
   try{
@@ -531,6 +572,39 @@ function processDueAllowance(st, today){
   return paid;
 }
 
+/* pay due recurring-savings occurrences; returns number of payments made.
+   Like the allowance, this ADDS money to the balance as recurring income —
+   it is NOT related to the savings goal, which does not change.
+   Fixed mode adds a fixed amount; percent mode adds pct% of the balance
+   as of the due date. Every payment is recorded in the history. */
+function processDueSavings(st, today){
+  var sv = st.savings;
+  if(!sv || !sv.enabled || !sv.nextDue) return 0;
+  var paid = 0;
+  while(sv.nextDue && sv.nextDue <= today && paid < 52){
+    var amount = 0;
+    if(sv.mode === "percent"){
+      var bal = computeBalance(st.txs, sv.nextDue).balance;
+      amount = Math.round(bal * (sv.percent||0) / 100);
+    }else{
+      amount = sv.amount || 0;
+    }
+    if(amount > 0){
+      var reason = "חיסכון קבוע" + (sv.mode==="percent" ? " (" + sv.percent + "% מהיתרה)" : "");
+      st.txs.push({ id: uid(), date: sv.nextDue, type:"income", amount: amount, reason: reason });
+      sv.lastPaid = sv.nextDue;
+      sv.lastAmount = amount;
+      paid++;
+    }
+    sv.nextDue = advanceDue(sv.nextDue, sv.frequency, sv.weekday, sv.dayOfMonth);
+  }
+  if(sv.nextDue && sv.nextDue <= today){
+    // too many missed occurrences (or zero-amount ones): jump to the next future one
+    sv.nextDue = sv.frequency==="weekly" ? nextWeekdayDate(sv.weekday, today) : nextMonthDate(sv.dayOfMonth||1, today);
+  }
+  return paid;
+}
+
 /* ---------- demo data (generic — no real personal data) ---------- */
 function demoState(){
   var st = emptyState("דני");
@@ -560,6 +634,7 @@ function compactState(s){
     tx:(s.txs||[]).map(function(t){ return [t.id, t.date, t.type==="income"?1:0, t.amount, t.reason||""]; }),
     tk:(s.tasks||[]).map(function(t){ return [t.id, t.title, t.reward, t.done||0]; }),
     al: s.allowance ? [s.allowance.amount, s.allowance.frequency, s.allowance.weekday, s.allowance.dayOfMonth, s.allowance.enabled?1:0, s.allowance.nextDue||"", s.allowance.lastPaid||""] : null,
+    sv: s.savings ? [s.savings.mode==="percent"?"p":"f", s.savings.amount||0, s.savings.percent||0, s.savings.frequency, s.savings.weekday, s.savings.dayOfMonth, s.savings.enabled?1:0, s.savings.nextDue||"", s.savings.lastPaid||"", s.savings.lastAmount||0] : null,
     g: s.goal ? [s.goal.title, s.goal.target, s.goal.emoji||"🎯"] : null };
 }
 function expandState(c){
@@ -585,7 +660,18 @@ function expandState(c){
   if(Array.isArray(c.g)){
     g = { title:String(c.g[0]||""), target:Math.max(1,Math.round(+c.g[1])||1), emoji:String(c.g[2]||"🎯") };
   }
-  return { v:1, name:c.n, txs:txs, tasks:tasks, allowance:al, goal:g };
+  var sv = null;
+  if(Array.isArray(c.sv)){
+    sv = { mode: c.sv[0]==="p"?"percent":"fixed",
+      amount: Math.max(0,Math.round(+c.sv[1])||0),
+      percent: Math.min(100,Math.max(1,Math.round(+c.sv[2])||10)),
+      frequency: c.sv[3]==="monthly"?"monthly":"weekly",
+      weekday: (c.sv[4]==null?null:Math.min(6,Math.max(0,Math.round(+c.sv[4])||0))),
+      dayOfMonth: (c.sv[5]==null?null:Math.min(28,Math.max(1,Math.round(+c.sv[5])||1))),
+      enabled: !!c.sv[6], nextDue: String(c.sv[7]||""), lastPaid: String(c.sv[8]||""),
+      lastAmount: Math.max(0,Math.round(+c.sv[9])||0) };
+  }
+  return { v:1, name:c.n, txs:txs, tasks:tasks, allowance:al, goal:g, savings:sv };
 }
 function bytesToBase64url(bytes){
   var bin = "", CH = 0x8000, i;
@@ -660,6 +746,7 @@ var TABS = [
   {id:"add", label:"➕ הוספת פעולה"},
   {id:"tasks", label:"✅ משימות"},
   {id:"allowance", label:"🗓️ דמי כיס"},
+  {id:"savings", label:"💰 חיסכון קבוע"},
   {id:"goal", label:"🎯 יעד"},
   {id:"dream", label:"💭 כסף דמיוני"},
   {id:"settings", label:"⚙️ הגדרות"}
@@ -681,7 +768,7 @@ function renderTabs(){
 }
 function showView(id){
   currentTab = id;
-  ["home","add","tasks","allowance","goal","dream","settings"].forEach(function(v){
+  ["home","add","tasks","allowance","savings","goal","dream","settings"].forEach(function(v){
     $("view-"+v).hidden = (v!==id);
   });
   renderTabs();
@@ -717,6 +804,7 @@ function renderAll(){
   renderGoalHome(sums.balance);
   renderTasks();
   renderAllowance();
+  renderSavings();
   renderGoalView(sums.balance);
   renderTabs();
 }
@@ -859,6 +947,45 @@ function syncAllowanceFreqUI(){
   var weekly = $("alFreq").value==="weekly";
   $("alWeekdayWrap").hidden = !weekly;
   $("alDayWrap").hidden = weekly;
+}
+
+function renderSavings(){
+  var el = $("savingsStatus");
+  var sv = state.savings;
+  var form = $("savingsForm");
+  if(!sv){
+    el.innerHTML = '<p class="card-sub">אין חיסכון קבוע כרגע.</p>';
+    form.querySelector("#svDeleteBtn").hidden = true;
+    return;
+  }
+  form.querySelector("#svDeleteBtn").hidden = false;
+  $("svMode").value = sv.mode==="percent" ? "percent" : "fixed";
+  $("svAmount").value = sv.mode==="percent" ? "" : shekels(sv.amount);
+  $("svPercent").value = sv.percent||10;
+  $("svFreq").value = sv.frequency;
+  $("svWeekday").value = sv.weekday==null?5:sv.weekday;
+  $("svDay").value = sv.dayOfMonth==null?1:sv.dayOfMonth;
+  $("svEnabled").checked = !!sv.enabled;
+  syncSavingsFreqUI();
+  syncSavingsModeUI();
+  var what = sv.mode==="percent" ? sv.percent+"% מהיתרה" : fmtMoney(sv.amount);
+  var when = sv.frequency==="weekly"
+    ? "כל שבוע, ביום " + ["ראשון","שני","שלישי","רביעי","חמישי","שישי","שבת"][sv.weekday==null?5:sv.weekday]
+    : "כל חודש, ב־" + (sv.dayOfMonth||1) + " לחודש";
+  el.innerHTML = '<div class="banner teal" style="margin-top:0"><p>💰 <b>'+what+' — '+when+'</b></p>'
+    + '<p style="margin:0">הפעם הבאה: <b>'+(sv.nextDue?fmtDate(sv.nextDue):"—")+'</b>'
+    + (sv.lastPaid?(' • שולם לאחרונה: '+fmtDate(sv.lastPaid)+(sv.lastAmount?(' ('+fmtMoney(sv.lastAmount)+')'):"")):"")
+    + ' • '+(sv.enabled?"פעיל":"מושהה")+'</p></div>';
+}
+function syncSavingsFreqUI(){
+  var weekly = $("svFreq").value==="weekly";
+  $("svWeekdayWrap").hidden = !weekly;
+  $("svDayWrap").hidden = weekly;
+}
+function syncSavingsModeUI(){
+  var percent = $("svMode").value==="percent";
+  $("svAmountWrap").hidden = percent;
+  $("svPercentWrap").hidden = !percent;
 }
 
 function renderGoalView(balance){
@@ -1039,6 +1166,35 @@ function bindEvents(){
     state.allowance = null; saveState(); renderAll();
   });
 
+  $("svFreq").addEventListener("change", syncSavingsFreqUI);
+  $("svMode").addEventListener("change", syncSavingsModeUI);
+  $("savingsForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var mode = $("svMode").value;
+    var amount = 0, percent = 0;
+    if(mode==="percent"){
+      percent = Math.min(100, Math.max(1, parseInt($("svPercent").value,10)||0));
+      if(!percent) return;
+    }else{
+      amount = Math.round(parseFloat($("svAmount").value)*100);
+      if(!isFinite(amount) || amount<=0) return;
+    }
+    var freq = $("svFreq").value;
+    var weekday = freq==="weekly" ? parseInt($("svWeekday").value,10) : null;
+    var dom = freq==="monthly" ? Math.min(28, Math.max(1, parseInt($("svDay").value,10)||1)) : null;
+    state.savings = {
+      mode: mode, amount: amount, percent: percent, frequency: freq, weekday: weekday, dayOfMonth: dom,
+      enabled: $("svEnabled").checked,
+      nextDue: freq==="weekly" ? nextWeekdayDate(weekday) : nextMonthDate(dom),
+      lastPaid: state.savings ? state.savings.lastPaid : "",
+      lastAmount: state.savings ? state.savings.lastAmount : 0
+    };
+    saveState(); renderAll();
+  });
+  $("svDeleteBtn").addEventListener("click", function(){
+    state.savings = null; saveState(); renderAll();
+  });
+
   $("goalForm").addEventListener("submit", function(e){
     e.preventDefault();
     var target = Math.round(parseFloat($("goalTarget").value)*100);
@@ -1134,8 +1290,13 @@ function bootOwner(){
   if(!stored){ showSetup(); return; }
   state = stored;
   viewMode = "owner";
+  var alBefore = state.allowance && state.allowance.nextDue;
+  var svBefore = state.savings && state.savings.nextDue;
   var paid = processDueAllowance(state, todayStr());
-  if(paid>0) saveState();
+  var saved = processDueSavings(state, todayStr());
+  var alAfter = state.allowance && state.allowance.nextDue;
+  var svAfter = state.savings && state.savings.nextDue;
+  if(paid>0 || saved>0 || alBefore!==alAfter || svBefore!==svAfter) saveState();
   showApp(); showView("home"); renderAll();
 }
 document.addEventListener("DOMContentLoaded", boot);
@@ -1146,6 +1307,7 @@ window.PiggyTest = {
   setState: function(s){ state = s; },
   computeBalance: computeBalance,
   processDueAllowance: processDueAllowance,
+  processDueSavings: processDueSavings,
   dreamIdeas: dreamIdeas,
   encodeStateToParam: encodeStateToParam,
   decodeParamToState: decodeParamToState,
