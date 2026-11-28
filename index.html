@@ -502,6 +502,11 @@ var FIREBASE_CONFIG = {
   appId: "1:466083374600:web:4590c79b538f2d2be3d3bd"
 };
 var FIREBASE_SDK_VERSION = "10.12.2";
+/* App Check (reCAPTCHA v3) site key — public identifier, like the apiKey.
+   Empty = App Check not activated yet. Filled in once the key is created in
+   the Firebase console; enforcement is turned on only AFTER this code is live
+   and verified, otherwise sign-in would break. */
+var APP_CHECK_SITE_KEY = "";
 var PROFILE_EMOJIS = ["🐷","🦁","🐶","🐱","🦄","🐸","🚀","⚽","🎨","🦊"];
 
 /* ---------- catalogs (generic, no personal data) ---------- */
@@ -920,14 +925,23 @@ function loadFirebaseSdk(){
       return;
     }
     fb.sdkLoading = true;
-    var files = ["firebase-app-compat.js", "firebase-auth-compat.js", "firebase-firestore-compat.js"];
+    /* SRI hashes (SHA-384) for the pinned 10.12.2 SDK files, verified against
+       the exact bytes served by gstatic. A tampered CDN file will not load. */
+    var files = [
+      {f:"firebase-app-compat.js", h:"sha384-AQ3POAMqIhwS81FrUH95ekxqBZHeP5tG2JfEL3+7GuTtfRLWnrRh32UxwzM+//A9"},
+      {f:"firebase-auth-compat.js", h:"sha384-TnlRYaR4JYz/lpaGuaiU61PjNberSA4vjLjtF+oRC/IkohkJqnWxw5EmDSOt1vA1"},
+      {f:"firebase-firestore-compat.js", h:"sha384-qn4Jh88HhJA8dplNQyGjOh9OGI4izVhrfj/qIFgaKcdgOE06pXqIKGlsCILZcLAC"},
+      {f:"firebase-app-check-compat.js", h:"sha384-E3vxFxXu8FhW5kvqdQJ5Yf8ugrV7iCJP8jgnItRH2Rk8Q08cJzJGTi/oMC3FEp3j"}
+    ];
     var i = 0;
     var done = false;
     var finish = function(ok){ if(!done){ done = true; fb.sdkLoading = false; if(!ok) fb.sdkLoadFailed = true; resolve(ok); } };
     var loadNext = function(){
       if(i >= files.length){ finish(true); return; }
       var s = document.createElement("script");
-      s.src = "https://www.gstatic.com/firebasejs/" + FIREBASE_SDK_VERSION + "/" + files[i];
+      s.src = "https://www.gstatic.com/firebasejs/" + FIREBASE_SDK_VERSION + "/" + files[i].f;
+      s.integrity = files[i].h;
+      s.crossOrigin = "anonymous";
       s.onload = function(){ i++; loadNext(); };
       s.onerror = function(){ finish(false); };
       setTimeout(function(){ finish(false); }, 20000);
@@ -944,6 +958,13 @@ function fbEnsureInit(){
     if(!ok){ fb.sdkFailed = true; return false; }
     try{
       fb.app = firebase.initializeApp(FIREBASE_CONFIG);
+      /* App Check: activate before any Auth/Firestore call, only when a site
+         key is configured. Without a key this is skipped and nothing changes. */
+      try{
+        if(APP_CHECK_SITE_KEY && firebase.appCheck){
+          firebase.appCheck().activate(APP_CHECK_SITE_KEY, true);
+        }
+      }catch(e){}
       fb.auth = firebase.auth();
       fb.db = firebase.firestore();
       fb.auth.onAuthStateChanged(function(user){
@@ -1005,7 +1026,7 @@ function fbAdoptCloud(cloud){
   if(!cloud || cloud.v!==1 || !Array.isArray(cloud.profiles) || !cloud.profiles.length) return false;
   var st = { v:1, activeId: cloud.activeId, updatedAt: cloud.updatedAt || Date.now(), profiles: [] };
   cloud.profiles.forEach(function(p){
-    st.profiles.push({ id: p.id, name: typeof p.name==="string" ? p.name : "",
+    st.profiles.push({ id: (/^[0-9a-z]+$/i.test(p.id||"") ? p.id : uid()), name: typeof p.name==="string" ? p.name : "",
       emoji: (PROFILE_EMOJIS.indexOf(p.emoji)>=0 ? p.emoji : "🐷"),
       state: normalizeProfileState(p.state) });
   });
@@ -1142,12 +1163,16 @@ function expandState(c){
   if(!c || c.v!==1 || typeof c.n!=="string") return null;
   function cleanTx(r){
     if(!Array.isArray(r) || r.length<5) return null;
+    if(!/^[0-9a-z]+$/i.test(String(r[0]||""))) return null; // ids are uid()-generated base36; anything else is rejected
+    var d = String(r[1]||"");
+    if(d && !/^\d{4}-\d{2}-\d{2}$/.test(d)) return null; // dates must be ISO YYYY-MM-DD
     var amt = Math.round(+r[3]); if(!isFinite(amt) || amt<0) return null;
-    return { id:String(r[0]), date:String(r[1]||todayStr()), type:r[2]===1?"income":"expense", amount:amt, reason:String(r[4]||"") };
+    return { id:String(r[0]), date:(d||todayStr()), type:r[2]===1?"income":"expense", amount:amt, reason:String(r[4]||"") };
   }
   var txs = (Array.isArray(c.tx)?c.tx:[]).map(cleanTx).filter(Boolean);
   var tasks = (Array.isArray(c.tk)?c.tk:[]).map(function(r){
     if(!Array.isArray(r)||r.length<3) return null;
+    if(!/^[0-9a-z]+$/i.test(String(r[0]||""))) return null;
     return { id:String(r[0]), title:String(r[1]||""), reward:Math.max(0,Math.round(+r[2])||0), done:Math.max(0,Math.round(+r[3])||0) };
   }).filter(Boolean);
   var al = null;
@@ -1202,9 +1227,11 @@ function encodeStateToParam(st){
 function decodeParamToState(param){
   return new Promise(function(resolve){
     if(!param){ resolve(null); return; }
+    if(param.length > 200000){ resolve(null); return; } // absurdly long share link: reject
     var kind = param.charAt(0), data;
     try{ data = base64urlToBytes(param.slice(1)); }catch(e){ resolve(null); return; }
     function finish(bytes){
+      if(bytes.length > 1000000){ resolve(null); return; } // decompressed payload cap (~1MB): prevents zip-bomb freeze
       try{
         var obj = JSON.parse(new TextDecoder().decode(bytes));
         resolve(expandState(obj));
@@ -1321,7 +1348,7 @@ function renderProfiles(){
     bar.hidden = false;
     bar.innerHTML = store.profiles.map(function(p){
       var sums = computeBalance(p.state.txs, todayStr());
-      return '<button type="button" class="profile-chip' + (p.id===store.activeId ? " active" : "") + '" data-profile="' + p.id + '">' + escapeHtml(p.emoji || "🐷") + " " + escapeHtml(p.name) + ' <span class="p-bal">' + fmtMoney(sums.balance) + "</span></button>";
+      return '<button type="button" class="profile-chip' + (p.id===store.activeId ? " active" : "") + '" data-profile="' + escapeHtml(p.id) + '">' + escapeHtml(p.emoji || "🐷") + " " + escapeHtml(p.name) + ' <span class="p-bal">' + fmtMoney(sums.balance) + "</span></button>";
     }).join("") + '<button type="button" class="profile-chip" id="newProfileBtn">＋ קופה חדשה</button>';
   }
   var list = $("profileList");
@@ -1332,8 +1359,8 @@ function renderProfiles(){
       return '<div class="profile-row"><div style="font-size:24px">' + escapeHtml(p.emoji || "🐷") + '</div>'
         + '<div style="flex:1;min-width:0"><div style="font-weight:800">' + escapeHtml(p.name) + "</div>"
         + '<div class="hint" style="margin-top:0">יתרה: ' + fmtMoney(sums.balance) + " • " + (p.state.txs || []).length + " פעולות" + (p.id===store.activeId ? " • פעילה כרגע" : "") + "</div></div>"
-        + '<button type="button" class="btn btn-small" data-rename-profile="' + p.id + '">✏️ שנה שם</button>'
-        + (store.profiles.length > 1 ? '<button type="button" class="btn btn-small btn-danger" data-del-profile="' + p.id + '">🗑️ מחק</button>' : "")
+        + '<button type="button" class="btn btn-small" data-rename-profile="' + escapeHtml(p.id) + '">✏️ שנה שם</button>'
+        + (store.profiles.length > 1 ? '<button type="button" class="btn btn-small btn-danger" data-del-profile="' + escapeHtml(p.id) + '">🗑️ מחק</button>' : "")
         + "</div>";
     }).join("");
   }
@@ -1394,13 +1421,13 @@ function txRowHtml(t, scheduled){
   var isInc = t.type==="income";
   var actions = "";
   if(viewMode==="owner" && !kidMode){
-    actions = '<div class="tx-actions"><button type="button" class="btn btn-small" data-edit-tx="'+t.id+'">✏️ ערוך</button>'
-      + '<button type="button" class="btn btn-small btn-danger" data-del-tx="'+t.id+'">🗑️ מחק</button></div>';
+    actions = '<div class="tx-actions"><button type="button" class="btn btn-small" data-edit-tx="'+escapeHtml(t.id)+'">✏️ ערוך</button>'
+      + '<button type="button" class="btn btn-small btn-danger" data-del-tx="'+escapeHtml(t.id)+'">🗑️ מחק</button></div>';
   }
   return '<li class="tx '+(isInc?"income":"expense")+(scheduled?" scheduled":"")+'">'
     + '<div class="tx-icon">'+(isInc?"＋":"−")+'</div>'
     + '<div class="tx-main"><div class="tx-reason">'+escapeHtml(t.reason||(isInc?"הכנסה":"הוצאה"))+'</div>'
-    + '<div class="tx-meta">'+(isInc?"הכנסה":"הוצאה")+' • '+fmtDate(t.date)+(scheduled?" • מתוכננת":"")+'</div>'
+    + '<div class="tx-meta">'+(isInc?"הכנסה":"הוצאה")+' • '+escapeHtml(fmtDate(t.date))+(scheduled?" • מתוכננת":"")+'</div>'
     + actions + '</div>'
     + '<div class="tx-amount">'+(isInc?"+":"−")+fmtMoney(t.amount)+'</div></li>';
 }
@@ -1441,8 +1468,8 @@ function renderTasks(){
   el.innerHTML = state.tasks.map(function(t){
     var btns = "";
     if(viewMode==="owner" && !kidMode){
-      btns = '<div class="row"><button type="button" class="btn btn-primary btn-small" data-done-task="'+t.id+'">✅ בוצע! +'+fmtMoney(t.reward)+'</button>'
-        + '<button type="button" class="btn btn-small btn-danger" data-del-task="'+t.id+'">🗑️</button></div>';
+      btns = '<div class="row"><button type="button" class="btn btn-primary btn-small" data-done-task="'+escapeHtml(t.id)+'">✅ בוצע! +'+fmtMoney(t.reward)+'</button>'
+        + '<button type="button" class="btn btn-small btn-danger" data-del-task="'+escapeHtml(t.id)+'">🗑️</button></div>';
     }
     return '<div class="task"><div class="task-main"><div class="task-title">'+escapeHtml(t.title)+'</div>'
       + '<div class="task-meta">פרס: '+fmtMoney(t.reward)+(t.done?(' • בוצע '+t.done+' פעמים'):"")+'</div></div>'+btns+'</div>';
